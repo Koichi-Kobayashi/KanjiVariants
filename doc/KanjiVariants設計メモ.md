@@ -1,6 +1,6 @@
 # KanjiVariants 設計メモ
 
-更新日: 2026-09-23
+更新日: 2026-09-27
 
 
 ## 1. 概要
@@ -83,6 +83,7 @@ V1では以下を対象とする。
 - 指定文字集合で文字・文字列を使用可能か判定
 - Unicode補助平面の漢字への対応
 - IVS / SVSを考慮した漢字表現
+- 登録済みIVS / SVSについて、明示的なオプション指定による基底文字へのフォールバック
 
 V1では以下は行わない。
 
@@ -91,9 +92,21 @@ V1では以下は行わない。
 - 丸数字など、漢字以外の互換文字変換
 - 全角 / 半角変換
 - 業務固有の文字変換ルール
+- 同一Unicodeコードポイントについて、フォントの違いによってのみ生じる字形差の判別
 
 MJ縮退マップの根拠情報は内部データとして保持してもよいが、
 V1のPublic APIには露出しない。
+
+KanjiVariantsが扱う字形差は、
+
+- 異なるUnicode scalar
+- Unicode IVDに登録されたIVS
+- Unicode Standardized Variantsに登録されたSVS
+
+として明示的に表現できるものを対象とする。
+
+同一Unicodeコードポイントがフォントによって異なる字形で描画される場合、
+その差は文字列データだけから判別できないため、KanjiVariantsの対象外とする。
 
 
 ---
@@ -174,6 +187,7 @@ Kanji
 KanjiText
 KanjiCharacter
 CharacterSet
+KanjiFallbackOptions
 ```
 
 MJ縮退マップの根拠情報や内部的な候補情報は、
@@ -182,25 +196,41 @@ V1では公開APIに含めない。
 ```csharp
 namespace KanjiVariants;
 
+[Flags]
+public enum KanjiFallbackOptions
+{
+    None = 0,
+
+    /// <summary>
+    /// 登録済みIVS / SVSについて、
+    /// Variation Selectorを除いた基底文字へのフォールバックを許可します。
+    /// </summary>
+    AllowVariationSelectorFallback = 1 << 0
+}
+
 public static class Kanji
 {
     public static IReadOnlyList<KanjiCharacter> GetAlternatives(
         KanjiCharacter character,
-        CharacterSet characterSet);
+        CharacterSet characterSet,
+        KanjiFallbackOptions options = KanjiFallbackOptions.None);
 
     public static IReadOnlyList<KanjiCharacter> GetAlternatives(
         string character,
-        CharacterSet characterSet);
+        CharacterSet characterSet,
+        KanjiFallbackOptions options = KanjiFallbackOptions.None);
 
     public static bool TryGetAlternative(
         KanjiCharacter character,
         CharacterSet characterSet,
-        out KanjiCharacter alternative);
+        out KanjiCharacter alternative,
+        KanjiFallbackOptions options = KanjiFallbackOptions.None);
 
     public static bool TryGetAlternative(
         string character,
         CharacterSet characterSet,
-        out KanjiCharacter alternative);
+        out KanjiCharacter alternative,
+        KanjiFallbackOptions options = KanjiFallbackOptions.None);
 
     public static bool IsSupported(
         KanjiCharacter character,
@@ -215,13 +245,24 @@ public static class KanjiText
 {
     public static string Replace(
         string text,
-        CharacterSet characterSet);
+        CharacterSet characterSet,
+        KanjiFallbackOptions options = KanjiFallbackOptions.None);
 
     public static bool IsSupported(
         string text,
         CharacterSet characterSet);
 }
 ```
+
+`KanjiFallbackOptions.None` は、
+従来のMJ縮退情報のみを使用する安全側の動作とする。
+
+`AllowVariationSelectorFallback` は、
+登録済みIVS / SVSについてVariation Selectorによる字形指定を失ってもよいことを
+呼び出し側が明示的に許可するためのオプションとする。
+
+未登録のVariation Sequenceについては、
+このオプションが指定されていても基底文字へフォールバックしない。
 
 
 ### Public APIを最小限にする方針
@@ -733,6 +774,45 @@ MJ縮退マップに存在する候補のうち、
 MJ縮退マップ上の根拠情報は内部データとして保持してもよいが、
 V1のPublic APIでは公開しない。
 
+### Variation Selectorフォールバック
+
+入力がUnicodeに正式登録されたIVS / SVSであり、
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+が指定されている場合は、
+
+```text
+BaseCharacter + VariationSelector
+        ↓
+BaseCharacter
+```
+
+という基底文字へのフォールバックも代替候補として扱うことができる。
+
+ただし、以下の条件をすべて満たす場合に限る。
+
+```text
+- 登録済みIVS / SVSである
+- AllowVariationSelectorFallback が指定されている
+- 基底文字が指定された CharacterSet で使用可能
+```
+
+未登録の、
+
+```text
+BaseCharacter + VariationSelector
+```
+
+については、オプションが指定されていても
+基底文字を候補として返さない。
+
+MJ縮退マップ由来の候補と、
+Variation Selectorフォールバックによる基底文字が同じ場合は、
+重複して返さない。
+
 一意に決定された代替文字が必要な場合は、
 
 ```csharp
@@ -778,9 +858,48 @@ MJ縮退マップに複数候補が存在していても、
 𠮷 → 吉
 ```
 
+### 代替文字決定の優先順位
+
+`TryGetAlternative()` は以下の優先順位で代替文字を決定する。
+
+```text
+1. MJ縮退マップ 一意な変換表
+        ↓
+   変換先が指定 CharacterSet で使用可能
+        ↓
+   採用
+
+2. 1で代替文字を取得できなかった場合、
+   AllowVariationSelectorFallback が指定されており、
+   入力が登録済みIVS / SVS
+        ↓
+   基底文字が指定 CharacterSet で使用可能
+        ↓
+   基底文字を採用
+
+3. 上記のいずれでも取得できない
+        ↓
+   false
+```
+
+MJ縮退マップ 一意な変換表による変換が可能な場合は、
+Variation Selectorフォールバックより優先する。
+
+これは、公式に定義された縮退先が存在する場合に、
+単純なVariation Selector除去よりもその縮退関係を優先するためである。
+
+未登録のVariation Sequenceについては、
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+が指定されていても基底文字へフォールバックしない。
+
 XMLコメント等では、
 
-> MJ縮退マップ 一意な変換表に基づいて決定される
+> MJ縮退マップ 一意な変換表に基づく変換を優先し、
+> 明示的に許可された場合のみ登録済みIVS / SVSの基底文字へフォールバックする
 
 ことを明記する。
 
@@ -803,8 +922,13 @@ var result = KanjiText.Replace(
 高橋吉野
 ```
 
-`TryGetAlternative()` と同様に、
-一意な変換表を使用して文字列全体を処理する。
+`TryGetAlternative()` と同様の代替文字決定ルールを使用して、
+文字列全体を処理する。
+
+通常はMJ縮退マップ 一意な変換表を使用し、
+`KanjiFallbackOptions.AllowVariationSelectorFallback`
+が指定されている場合は、
+登録済みIVS / SVSの基底文字へのフォールバックも行う。
 
 
 ### 代替文字が存在しない場合
@@ -852,7 +976,40 @@ BaseCharacter + VariationSelector
 ### IVS / SVSの扱い
 
 登録済みのIVS / SVSは、
-基底文字とVariation Selectorを組み合わせて検索する。
+
+```text
+BaseCharacter + VariationSelector
+```
+
+を1つの論理単位として扱う。
+
+まず、
+MJ縮退マップ 一意な変換表に基づく変換を試みる。
+
+一意な変換先が存在し、
+かつ指定された `CharacterSet` で使用可能であれば、
+その変換先を使用する。
+
+一意な変換先を使用できない場合で、
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+が指定されているときは、
+登録済みIVS / SVSについて基底文字へのフォールバックを試みる。
+
+```text
+BaseCharacter + VariationSelector
+        ↓
+BaseCharacter
+```
+
+ただし、基底文字が指定された `CharacterSet` で
+使用可能な場合に限る。
+
+オプションが指定されていない場合は、
+Variation Selectorを削除しない。
 
 未登録の、
 
@@ -861,11 +1018,45 @@ BaseCharacter + VariationSelector
 ```
 
 を検出した場合は、
-BaseCharacterだけにフォールバックして置換しない。
+`AllowVariationSelectorFallback` が指定されていても
+BaseCharacterだけにフォールバックしない。
 
 シーケンス全体を元のまま残す。
 
-Variation Selectorだけを削除する処理も行わない。
+### `Replace()` の変換優先順位
+
+```text
+入力
+ ↓
+その表現が対象 CharacterSet でそのまま使用可能
+ ↓ Yes
+変更しない
+
+ ↓ No
+
+MJ縮退マップ 一意な変換先あり
+かつ変換先が対象 CharacterSet で使用可能
+ ↓ Yes
+一意な変換先へ置換
+
+ ↓ No
+
+登録済み IVS / SVS
+かつ AllowVariationSelectorFallback 指定あり
+かつ基底文字が対象 CharacterSet で使用可能
+ ↓ Yes
+基底文字へフォールバック
+
+ ↓ No
+
+元の表現を維持
+```
+
+Variation Selectorフォールバックは、
+字形指定を失う可能性がある処理である。
+
+そのためV1ではデフォルト動作に含めず、
+呼び出し側が明示的に許可した場合のみ実行する。
 
 
 ### 不正なUTF-16
@@ -1330,8 +1521,88 @@ Kanji.GetAlternatives()
 その文字について代替情報を持っているか
 ```
 
-そのため、有効なIVSであってもMJ側に対応情報がなければ、
-`GetAlternatives()` が空になることはあり得る。
+そのため、有効なIVS / SVSであってもMJ側に対応情報がなければ、
+デフォルトでは `GetAlternatives()` が空になることはあり得る。
+
+ただし、
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+が指定されており、
+基底文字が指定された `CharacterSet` で使用可能な場合は、
+基底文字を代替候補として返すことができる。
+
+### Variation Selectorフォールバック
+
+登録済みIVS / SVSは、
+Variation Selectorを除去すると基底文字だけの表現になる。
+
+例:
+
+```text
+BaseCharacter + VS
+        ↓
+BaseCharacter
+```
+
+この処理は、
+単なるUnicode正規化ではなく、
+
+> 特定の字形指定を失ってもよい
+
+という意味を持つ。
+
+そのためKanjiVariantsでは、
+Variation Selectorを無条件に削除しない。
+
+以下が明示的に指定された場合のみ許可する。
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+さらに、
+
+- Unicodeに正式登録されたIVS / SVSであること
+- 基底文字が指定された `CharacterSet` で使用可能であること
+
+を条件とする。
+
+未登録Variation Sequenceは、
+たとえ基底文字自体が指定文字集合で使用可能であっても
+フォールバック対象にしない。
+
+### 同一コードポイントの字形差
+
+KanjiVariantsはUnicode文字列を入力として処理する。
+
+そのため、
+
+```text
+同一Unicodeコードポイント
++
+フォントによる描画差
+```
+
+だけで生じる字形差を判別することはできない。
+
+例えば、同じコードポイントの `辻` が
+フォントによって一点しんにょう・二点しんにょう等の
+異なる字形として描画される場合、
+文字列中にVariation Selector等の情報が存在しなければ
+KanjiVariantsからその違いを判断することはできない。
+
+KanjiVariantsが区別可能なのは、
+
+```text
+- 異なるUnicode scalar
+- 登録済みIVS
+- 登録済みSVS
+```
+
+として文字列中に明示されている差までとする。
 
 
 ---
@@ -1475,6 +1746,98 @@ U+5409
 ```
 
 
+### 辻のVariation Sequence
+
+`辻` のように、
+同じ基底文字に対してVariation Selectorによって
+特定の字形を指定するVariation Sequenceが存在する。
+
+概念例:
+
+```text
+辻 + Variation Selector
+        ↓
+辻
+```
+
+具体例:
+
+```text
+辻
+BaseCharacter: U+8FBB
+VariationSelector: U+E0102
+```
+
+この登録済みVariation Sequenceに対して、
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+が指定されており、
+基底文字 `U+8FBB` が指定された `CharacterSet` で使用可能な場合は、
+
+```text
+U+8FBB + U+E0102
+        ↓
+U+8FBB
+```
+
+のように基底文字へフォールバックできる。
+
+登録済みIVS / SVSについて、
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+が指定されており、
+基底文字の `辻` が指定された `CharacterSet` で使用可能な場合は、
+Variation Selectorを除去して基底文字へフォールバックできる。
+
+```text
+登録済みVariation Sequence
+辻 + VS
+        ↓ AllowVariationSelectorFallback
+辻
+```
+
+ただし、この処理では
+Variation Selectorによって指定されていた字形情報が失われる。
+
+そのため、
+
+```csharp
+KanjiFallbackOptions.None
+```
+
+ではVariation Selectorを削除せず、
+元のVariation Sequenceを維持する。
+
+また、単なる `U+8FBB` の `辻` が
+フォントによって一点しんにょう・二点しんにょう等の
+異なる字形として描画される場合、
+文字列中にVariation Selector等の情報がなければ
+KanjiVariantsからその違いを判別することはできない。
+
+この例は、
+
+```text
+髙 → 高
+𠮷 → 吉
+```
+
+のようなMJ縮退マップに基づく別Unicode scalarへの変換とは異なり、
+
+```text
+BaseCharacter + VariationSelector
+        ↓
+BaseCharacter
+```
+
+という字形指定の縮退である。
+
+
 ---
 
 ## 18. データのバージョン関係
@@ -1595,6 +1958,12 @@ Unicode境界条件、IVS / SVS、不正UTF-16、内部最適化方針も含め�
 - 指定された `CharacterSet` 外の候補を返さない
 - 登録済みIVS / SVS
 - MJ側に代替情報を持たない有効な `KanjiCharacter`
+- 登録済みIVS / SVS + optionsなしでは基底文字を候補に追加しない
+- 登録済みIVS / SVS + AllowVariationSelectorFallback では基底文字を候補に追加できる
+- 基底文字が指定 CharacterSet 外の場合は候補に追加しない
+- 未登録 BaseCharacter + VariationSelector は
+  AllowVariationSelectorFallback 指定時もフォールバックしない
+- MJ候補とVariation Selectorフォールバック先が同一の場合は重複させない
 
 
 ### `Kanji.TryGetAlternative()`
@@ -1606,6 +1975,13 @@ Unicode境界条件、IVS / SVS、不正UTF-16、内部最適化方針も含め�
 - MJ縮退マップに複数候補が存在していても、
   一意な変換表に変換先が定義されていれば取得できる
 - `GetAlternatives().Count == 1` を判定条件として使用しない
+- 登録済みIVS / SVS + optionsなしでは基底文字へフォールバックしない
+- 登録済みIVS / SVS + AllowVariationSelectorFallback では基底文字へフォールバックできる
+- 基底文字が指定 CharacterSet 外の場合は false
+- 未登録 BaseCharacter + VariationSelector は
+  AllowVariationSelectorFallback 指定時も false
+- MJ一意変換とVariation Selectorフォールバックの両方が可能な場合、
+  MJ一意変換を優先する
 
 
 ### `Kanji.IsSupported()`
@@ -1629,7 +2005,17 @@ Unicode境界条件、IVS / SVS、不正UTF-16、内部最適化方針も含め�
 - 登録済みIVS / SVS
 - 未登録の `BaseCharacter + VariationSelector`
 - 未登録Variation SequenceではBaseCharacter単体へフォールバックしない
-- Variation Selectorだけを削除しない
+- 登録済みVariation Sequenceについても、
+  AllowVariationSelectorFallback が指定されていない場合は
+  Variation Selectorだけを削除しない
+- 登録済みIVS / SVS + AllowVariationSelectorFallback では
+  基底文字へフォールバックできる
+- 基底文字が指定 CharacterSet 外の場合は元のシーケンスを維持
+- 未登録 BaseCharacter + VariationSelector は
+  AllowVariationSelectorFallback 指定時もシーケンス全体を維持
+- MJ一意変換とVariation Selectorフォールバックの両方が可能な場合、
+  MJ一意変換を優先する
+- Variation Selectorフォールバックが発生した場合は置換ありとして扱う
 - 不正UTF-16を含む文字列
 - 不正UTF-16部分を維持し、残りの処理を継続する
 - 空文字列
@@ -1674,6 +2060,11 @@ public void Replace_NoReplacement_ReturnsSameInstance()
 
 これにより、置換が不要な文字列では
 不要な `StringBuilder` や新しい `string` が生成されていないことを確認する。
+
+登録済みIVS / SVSを含んでいても、
+`AllowVariationSelectorFallback` が指定されておらず、
+その他の置換も発生しない場合は、
+入力された `string` インスタンスそのものを返す。
 
 
 ### Build-time Generator
@@ -1860,10 +2251,22 @@ Kanji
 KanjiText
 KanjiCharacter
 CharacterSet
+KanjiFallbackOptions
 ```
 
 MJ縮退マップの代替候補・根拠情報を表す内部データ構造は、
 V1のPublic APIには露出しない。
 
 `GetVariants()` もV1では提供しない。
+
+Variation Selectorによる字形指定を失う可能性がある処理は、
+デフォルトでは実行しない。
+
+登録済みIVS / SVSを基底文字へフォールバックさせる場合は、
+
+```csharp
+KanjiFallbackOptions.AllowVariationSelectorFallback
+```
+
+を明示的に指定する。
 
