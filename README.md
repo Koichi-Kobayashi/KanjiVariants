@@ -31,7 +31,7 @@ var usable = KanjiText.IsSupported(converted, CharacterSet.JisX0208);
 
 ### IVS/SVSのフォールバック
 
-登録済みIVS/SVSから基底文字へのフォールバックは、オプションを指定した場合だけ行います。例えば `辻`（U+8FBB）とVariation Selector（U+E0100）の登録済みシーケンスは、基底文字の `辻` に置換できます。
+登録済みIVS/SVSから基底文字へのフォールバックは、オプションを指定した場合だけ行います。例えば一点しんにょうの字形を指定する「辻󠄀」は、`辻`（U+8FBB）とVariation Selector（U+E0100）の登録済みシーケンスで、基底文字の `辻` に置換できます。
 
 ```csharp
 var options = KanjiFallbackOptions.AllowVariationSelectorFallback;

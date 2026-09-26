@@ -49,7 +49,9 @@ Check(KanjiText.Replace("髙\uFE0F", set) == "髙\uFE0F", "preserve unregistered
 
 // 登録済みだがMJ側に変換先がないシーケンスで、明示的なVSフォールバックを確認します。
 var fallback = KanjiFallbackOptions.AllowVariationSelectorFallback;
-var tsujiVs = "辻\U000E0100";
+// 「辻󠄀」は一点しんにょうの字形を指定するIVSです。見えにくいVSの符号位置も確認します。
+var tsujiVs = "辻󠄀";
+Check(tsujiVs == "辻\U000E0100", "一点しんにょうの辻󠄀はU+8FBB + U+E0100");
 Check(KanjiCharacter.TryParse(tsujiVs, out var tsujiCharacter), "registered non-MJ IVS");
 Check(Kanji.GetAlternatives(tsujiVs, set).Count == 0, "no default base candidate");
 Check(Kanji.GetAlternatives(tsujiVs, set, fallback).Select(x => x.ToString()).SequenceEqual(new[] { "辻" }),
@@ -65,6 +67,19 @@ Check(!Kanji.IsSupported(tsujiVs, set) && !KanjiText.IsSupported(tsujiVs, set),
     "IVS remains unsupported as-is");
 Check(ReferenceEquals(tsujiVs, KanjiText.Replace(tsujiVs, set)), "default IVS retains string instance");
 Check(KanjiText.Replace(tsujiVs, set, fallback) == "辻", "IVS text fallback with option");
+
+// 「榊󠄀」も登録済みIVSですが、MJ一意変換表にはこのシーケンスの変換先がありません。
+var sakakiVs = "榊󠄀";
+Check(sakakiVs == "榊\U000E0100", "榊󠄀はU+698A + U+E0100");
+Check(KanjiCharacter.TryParse(sakakiVs, out _), "registered 榊 IVS");
+Check(Kanji.GetAlternatives(sakakiVs, set).Count == 0, "no default 榊 base candidate");
+Check(Kanji.GetAlternatives(sakakiVs, set, fallback).Single().ToString() == "榊",
+    "榊 base candidate with option");
+Check(!Kanji.TryGetAlternative(sakakiVs, set, out _), "no default 榊 fallback");
+Check(Kanji.TryGetAlternative(sakakiVs, set, out alt, fallback) && alt.ToString() == "榊",
+    "榊 fallback with option");
+Check(ReferenceEquals(sakakiVs, KanjiText.Replace(sakakiVs, set)), "default 榊 IVS retains string instance");
+Check(KanjiText.Replace(sakakiVs, set, fallback) == "榊", "榊 text fallback with option");
 
 var svs = "不\uFE00";
 Check(KanjiCharacter.TryParse(svs, out _), "registered non-MJ SVS");
@@ -87,6 +102,37 @@ Check(KanjiText.Replace("亟", set) == "亟", "supported source remains unchange
 var mjTsujiVs = "辻\U000E0102";
 var mjCandidates = Kanji.GetAlternatives(mjTsujiVs, set, fallback).Select(x => x.ToString()).ToArray();
 Check(mjCandidates.Count(x => x == "辻") == 1, "MJ base candidate not duplicated by fallback");
+
+// 各行の先頭はVSなし、以降は表に記載された連続するVS付きの表現です。
+void CheckVariationRow(string row, string baseCharacter, int firstSelector)
+{
+    var examples = row.Split('　');
+    Check(examples[0] == baseCharacter && Kanji.IsSupported(baseCharacter, set),
+        $"{baseCharacter} is supported without VS");
+    for (int i = 1; i < examples.Length; i++)
+    {
+        int selector = firstSelector + i - 1;
+        string example = examples[i];
+        string label = $"{baseCharacter} + U+{selector:X}";
+        Check(KanjiCharacter.TryParse(example, out var parsed) &&
+            parsed.BaseCharacter.Value == char.ConvertToUtf32(baseCharacter, 0) &&
+            parsed.VariationSelector?.Value == selector, $"{label} registered and correctly encoded");
+        Check(!Kanji.IsSupported(example, set), $"{label} is unsupported as a sequence");
+        // この一覧のIVSにはMJの一意な変換先があるため、オプションなしでも基底文字へ縮退します。
+        Check(Kanji.TryGetAlternative(example, set, out var alternative) &&
+            alternative.ToString() == baseCharacter, $"{label} official alternative");
+        Check(KanjiText.Replace(example, set) == baseCharacter, $"{label} official replacement");
+        Check(KanjiText.Replace(example, set, fallback) == baseCharacter,
+            $"{label} replacement with fallback option");
+    }
+}
+
+CheckVariationRow(
+    "邉　邉󠄏　邉󠄐　邉󠄑　邉󠄒　邉󠄓　邉󠄔　邉󠄕　邉󠄖　邉󠄗　邉󠄘　邉󠄙　邉󠄚　邉󠄛　邉󠄜　邉󠄝",
+    "邉", 0xE010F);
+CheckVariationRow(
+    "邊　邊󠄈　邊󠄉　邊󠄊　邊󠄋　邊󠄌　邊󠄍　邊󠄎　邊󠄏　邊󠄐",
+    "邊", 0xE0108);
 
 var outsideBaseVs = "\u3404\U000E0101";
 Check(Kanji.GetAlternatives(outsideBaseVs, set, fallback).SequenceEqual(Kanji.GetAlternatives(outsideBaseVs, set)),
