@@ -9,16 +9,20 @@ namespace KanjiVariants;
 /// <summary>文字列中の漢字を置換し、結果の文字集合への所属を調べます。</summary>
 public static class KanjiText
 {
-    /// <summary>一意な変換表に変換先がある漢字を置換し、それ以外の文字列部分は維持します。</summary>
+    /// <summary>対象集合にない漢字を公式の一意な変換先へ置換し、許可された場合は登録済み IVS/SVS の基底文字へフォールバックします。</summary>
     /// <param name="text">置換する文字列。ASCII はそのまま通過します。</param>
     /// <param name="characterSet">変換先として使用できる文字集合。</param>
+    /// <param name="options">登録済み IVS/SVS の基底文字へフォールバックするかどうか。</param>
     /// <returns>置換後の文字列。置換がなければ入力と同じ string インスタンスです。</returns>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> が null の場合。</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="characterSet"/> が未定義の値の場合。</exception>
-    public static string Replace(string text, CharacterSet characterSet)
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> に未定義の値が含まれる場合。</exception>
+    public static string Replace(string text, CharacterSet characterSet,
+        KanjiFallbackOptions options = KanjiFallbackOptions.None)
     {
         ArgumentNullException.ThrowIfNull(text);
         Lookup.Validate(characterSet);
+        Lookup.Validate(options);
         // 置換が見つかるまでは入力文字列をそのまま使い、不要な割り当てを避けます。
         StringBuilder? builder = null;
         int offset = 0;
@@ -35,10 +39,20 @@ public static class KanjiText
                 builder?.Append(text, start, offset - start);
                 continue;
             }
+            // 元の表現がすでに対象集合にある場合は、字を変えずに維持します。
+            if (selectorCp is null && Lookup.IsSupported(baseCp, characterSet))
+            {
+                builder?.Append(text, start, offset - start);
+                continue;
+            }
             int entry = Lookup.FindEntry(baseCp, selectorCp);
             int target = entry < 0 ? 0 : GeneratedData.UniqueAlternatives[entry];
-            if (target != 0 && Lookup.IsSupported(target, characterSet) &&
-                (selectorCp is not null || target != baseCp))
+            if (target == 0 || !Lookup.IsSupported(target, characterSet))
+            {
+                // 公式の一意な変換先を使えないときだけ、許可された登録済みシーケンスの基底文字を試します。
+                target = Lookup.CanFallbackToBase(baseCp, selectorCp, characterSet, options) ? baseCp : 0;
+            }
+            if (target != 0 && (selectorCp is not null || target != baseCp))
             {
                 // 最初の置換位置までを一度だけコピーし、以降の文字を順に追記します。
                 builder ??= new StringBuilder(text.Length).Append(text, 0, start);

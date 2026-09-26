@@ -2,7 +2,7 @@
 
 MJ縮退マップに基づいて漢字の代替候補を検索し、一意な変換先が定義されている文字を置換する .NET 6 ライブラリです。変換先は指定した文字集合で絞り込み、現在は `CharacterSet.JisX0208` を提供しています。
 
-このライブラリは、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。変換できる文字は、使用するMJデータに対応があり、変換先が一意に定まるものに限られます。
+このライブラリは、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。
 
 ## `CharacterSet.JisX0208` とは
 
@@ -10,7 +10,7 @@ JIS X 0208 は、日本語の文章で使う漢字や記号などを定めた文
 
 ### APIでの指定方法とIVS/SVS
 
-この文字集合は `CharacterSet.JisX0208` としてAPIに指定します。`KanjiText.IsSupported` はASCIIを通過させ、それ以外の文字がJIS X 0208に対応するかを確認します。IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。ライブラリは登録済みのIVS/SVSを一つの漢字表現として解析し、`GetAlternatives` や `TryGetAlternative` で代替候補を調べられます。ただしVariation Selector付きの表記自体はJIS X 0208の収録文字ではないため、`Kanji.IsSupported` と `KanjiText.IsSupported` はその表記をサポート対象外（`false`）と判定します。`KanjiText.Replace` は登録済みシーケンス全体を検索し、代替候補が見つかれば対象文字集合に含まれる漢字へ置換します。
+この文字集合は `CharacterSet.JisX0208` としてAPIに指定します。`KanjiText.IsSupported` はASCIIを通過させ、それ以外の文字がJIS X 0208に対応するかを確認します。IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。ライブラリは登録済みのIVS/SVSを一つの漢字表現として解析し、`GetAlternatives` や `TryGetAlternative` で代替候補を調べられます。ただしVariation Selector付きの表記自体はJIS X 0208の収録文字ではないため、`Kanji.IsSupported` と `KanjiText.IsSupported` はその表記をサポート対象外（`false`）と判定します。`KanjiText.Replace` は登録済みシーケンス全体を検索し、公式の一意な変換先が使用可能ならそれを採用します。`KanjiFallbackOptions.AllowVariationSelectorFallback` を指定した場合は、一意な変換先が使用できず、基底文字が指定集合に含まれるときに基底文字へフォールバックします。
 
 ### 対象外となる拡張文字
 
@@ -27,19 +27,31 @@ var converted = KanjiText.Replace("髙橋𠮷野", CharacterSet.JisX0208);
 var usable = KanjiText.IsSupported(converted, CharacterSet.JisX0208);
 ```
 
-`GetAlternatives` は縮退マップ中の候補を重複なく返します。`TryGetAlternative` と `KanjiText.Replace` は、候補数ではなく公式の一意な変換表を使います。変換先が JIS X 0208 にないときは採用しません。置換できない文字や不正な UTF-16 はそのまま残り、`IsSupported` で結果を検証できます。登録済み IVS/SVS は一つの漢字表現として解析され、未登録のシーケンスでは基底文字だけを置換しません。
+`GetAlternatives` は縮退マップ中の候補を重複なく返します。`TryGetAlternative` と `KanjiText.Replace` は、候補数ではなく公式の一意な変換表を優先します。変換先が JIS X 0208 にないときは採用しません。`Replace` は入力文字がすでに使用可能なら維持します。置換できない文字や不正な UTF-16 はそのまま残り、`IsSupported` で結果を検証できます。登録済み IVS/SVS は一つの漢字表現として解析され、未登録のシーケンスでは基底文字だけを置換しません。
+
+### IVS/SVSのフォールバック
+
+登録済みIVS/SVSから基底文字へのフォールバックは、オプションを指定した場合だけ行います。例えば `辻`（U+8FBB）とVariation Selector（U+E0100）の登録済みシーケンスは、基底文字の `辻` に置換できます。
+
+```csharp
+var options = KanjiFallbackOptions.AllowVariationSelectorFallback;
+var result = KanjiText.Replace("辻\U000E0100", CharacterSet.JisX0208, options);
+// result == "辻"
+```
+
+デフォルトの `KanjiFallbackOptions.None` ではVariation Selectorを削除しません。フォールバックでは指定されていた字形情報が失われます。公式の一意な変換先が対象集合に含まれる場合は、オプション指定時もその変換先を優先します。未登録のIVS/SVSや、基底文字が対象集合に含まれない場合はフォールバックしません。
 
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
 |---|---|---|
-| `Kanji.GetAlternatives` | MJ縮退マップにある候補のうち、指定集合に含まれる候補を一覧取得 | 漢字一文字、または登録済み IVS/SVS |
-| `Kanji.TryGetAlternative` | MJ縮退マップの一意な変換表から一つの変換先を取得 | 漢字一文字、または登録済み IVS/SVS |
+| `Kanji.GetAlternatives` | MJ縮退マップにある候補を一覧取得。オプション指定時は登録済みIVS/SVSの基底文字も候補に追加 | 漢字一文字、または登録済み IVS/SVS |
+| `Kanji.TryGetAlternative` | MJ縮退マップの一意な変換先を優先。使用できない場合、オプション指定時は登録済みIVS/SVSの基底文字を取得 | 漢字一文字、または登録済み IVS/SVS |
 | `Kanji.IsSupported` | 漢字表現そのものが指定集合に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
-| `KanjiText.Replace` | 変換可能な漢字を文字列内で置換 | 任意の文字列 |
+| `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
 | `KanjiText.IsSupported` | 文字列全体を指定集合で検証 | 任意の文字列 |
 
-`GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表による結果です。候補一覧が1件かどうかで一意な変換先を決めるものではありません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
+`GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表を優先した結果です。候補一覧が1件かどうかで一意な変換先を決めるものではありません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
 
 ## 一意な変換先の一覧
 
@@ -49,8 +61,8 @@ MJ縮退マップの一意な変換表から作成した一覧を [`data/MJUniqu
 
 - ASCII は使用可能として通過します。それ以外の文字は JIS X 0208 への収録を確認します。
 - JIS X 0208 は IVS/SVS のシーケンスを含まないため、Variation Selector 付き表現の `IsSupported` は `false` です。
-- 登録済み IVS/SVS は一つの単位として検索します。未登録シーケンスは基底文字へ分解せず、そのまま残します。
-- `Replace` は置換可能な文字だけを書き換え、置換先が対象集合外なら入力を維持します。結果の完全な検証には `KanjiText.IsSupported` を使います。
+- 登録済み IVS/SVS は一つの単位として検索します。基底文字へのフォールバックはオプション指定時に限ります。未登録シーケンスは基底文字へ分解せず、そのまま残します。
+- `Replace` は対象集合で使用可能な入力文字を維持します。それ以外は公式の一意な変換先を優先し、使用できない場合は明示指定されたフォールバックを試します。結果の完全な検証には `KanjiText.IsSupported` を使います。
 - `Replace` は不正な UTF-16 を例外にせず保持して走査を続けます。`IsSupported` は不正な UTF-16 があれば `false` を返します。
 - `Replace` と `IsSupported` に null を渡すと `ArgumentNullException` が発生します。
 

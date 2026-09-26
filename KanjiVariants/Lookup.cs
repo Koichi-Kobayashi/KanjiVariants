@@ -26,6 +26,13 @@ internal static class Lookup
     internal static bool IsRegisteredVariation(int baseCp, int selectorCp) =>
         Array.BinarySearch(GeneratedData.ValidVariationKeys, CreateKey(baseCp, selectorCp)) >= 0;
 
+    // VS 除去は字形指定を失うため、明示的な許可・正式登録・基底文字の所属をすべて確認します。
+    internal static bool CanFallbackToBase(int baseCp, int? selectorCp, CharacterSet characterSet, KanjiFallbackOptions options) =>
+        (options & KanjiFallbackOptions.AllowVariationSelectorFallback) != 0 &&
+        selectorCp is int selector &&
+        IsRegisteredVariation(baseCp, selector) &&
+        IsSupported(baseCp, characterSet);
+
     internal static int FindEntry(int baseCp, int? selectorCp)
     {
         if (selectorCp is null)
@@ -50,5 +57,11 @@ internal static class Lookup
     {
         if (characterSet != CharacterSet.JisX0208)
             throw new ArgumentOutOfRangeException(nameof(characterSet));
+    }
+
+    internal static void Validate(KanjiFallbackOptions options)
+    {
+        if ((options & ~KanjiFallbackOptions.AllowVariationSelectorFallback) != 0)
+            throw new ArgumentOutOfRangeException(nameof(options));
     }
 }
