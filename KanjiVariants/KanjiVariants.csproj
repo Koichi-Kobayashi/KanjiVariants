@@ -2,8 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <PackageId>KanjiVariants</PackageId>
+    <Description>Japanese kanji alternatives based on the MJ contraction map.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KanjiVariants.Benchmarks" />
+  </ItemGroup>
 
 </Project>
