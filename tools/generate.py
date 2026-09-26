@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import collections
+import csv
 import json
 import re
 import xml.etree.ElementTree as ET
@@ -17,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'data'
 OUT = ROOT / 'KanjiVariants' / 'GeneratedData.g.cs'
+UNIQUE_CSV = DATA / 'MJUniqueAlternatives.1.2.0.csv'
 NS = '{http://purl.oclc.org/ooxml/spreadsheetml/main}'
 
 
@@ -58,6 +60,60 @@ def variations(value):
 
 def key(base, vs):
     return base | (vs << 21)
+
+
+def export_unique_alternatives(mj, unique, valid_variations):
+    """一意な変換先とMJ文字図形ごとの元表現をCSVに書き出します。"""
+    rows = []
+    for item in unique:
+        destination = item['変換先']
+        target_cp = scalar(destination.get('UCS'))
+        # U+FF3Fは公式データで「候補なし」を表す値なので一覧から除外します。
+        if target_cp is None or target_cp == 0xFF3F:
+            continue
+        mj_name = item['MJ文字図形名']
+        source = mj[mj_name]
+        representations = set()
+        for column in ('E', 'M'):
+            cp = scalar(source.get(column))
+            if cp is not None:
+                representations.add((cp, None))
+        # 実装UCS等がない行だけ、MJ一覧の代表UCSを補助表現として使います。
+        if not representations:
+            cp = scalar(source.get('D'))
+            if cp is not None:
+                representations.add((cp, None))
+        for column in ('F', 'G'):
+            for base, selector in variations(source.get(column)):
+                if key(base, selector) in valid_variations:
+                    representations.add((base, selector))
+        for base, selector in sorted(representations, key=lambda value: (value[0], value[1] or 0)):
+            source_cps = f'U+{base:04X}'
+            source_text = chr(base)
+            kind = 'Unicode文字'
+            if selector is not None:
+                source_cps += f' U+{selector:04X}'
+                source_text += chr(selector)
+                kind = 'IVS/SVS'
+            rows.append({
+                'MJ文字図形名': mj_name,
+                '表現種別': kind,
+                '変換元UCS': source_cps,
+                '変換元文字': source_text,
+                '変換先UCS': f'U+{target_cp:04X}',
+                '変換先文字': chr(target_cp),
+                '変換先JIS X 0213': destination.get('JIS X 0213', ''),
+            })
+
+    columns = ('MJ文字図形名', '表現種別', '変換元UCS', '変換元文字',
+               '変換先UCS', '変換先文字', '変換先JIS X 0213')
+    rows.sort(key=lambda row: (row['MJ文字図形名'], row['変換元UCS']))
+    # Excelでも日本語を開きやすいようUTF-8 BOM付きで保存します。
+    with UNIQUE_CSV.open('w', encoding='utf-8-sig', newline='') as output:
+        writer = csv.DictWriter(output, fieldnames=columns, lineterminator='\n')
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f'Generated {UNIQUE_CSV.name}: {len(rows)} source representations')
 
 
 def registered(path):
@@ -164,6 +220,7 @@ def main():
     # The registered sequences are valid even without a corresponding MJ entry.
     valid = set(registered(DATA / 'IVD_Sequences.txt'))
     valid.update(registered(DATA / 'StandardizedVariants.txt'))
+    export_unique_alternatives(mj, unique, valid)
     variation_to_entry = {k: v for k, v in variation_to_entry.items() if k in valid}
     scalar_keys = sorted(scalar_to_entry)
     assert scalar_keys[-1] <= 0x323AF

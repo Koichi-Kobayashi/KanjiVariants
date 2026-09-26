@@ -1,6 +1,22 @@
 # KanjiVariants
 
-指定された文字集合で使用できる漢字の代替候補を探し、MJ縮退マップの一意な変換表に基づいて文字列を置換する .NET 6 ライブラリです。現時点の文字集合は `CharacterSet.JisX0208` です。
+MJ縮退マップに基づいて漢字の代替候補を検索し、一意な変換先が定義されている文字を置換する .NET 6 ライブラリです。変換先は指定した文字集合で絞り込み、現在は `CharacterSet.JisX0208` を提供しています。
+
+このライブラリは、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。変換できる文字は、使用するMJデータに対応があり、変換先が一意に定まるものに限られます。
+
+## `CharacterSet.JisX0208` とは
+
+JIS X 0208 は、日本語の文章で使う漢字や記号などを定めた文字集合です。漢字は第一水準と第二水準を含み、非漢字の記号・かな・英数字なども規定されています。このライブラリでは、そのJIS X 0208の区点位置をUnicodeに対応付けた文字を、代替候補の変換先として使います。これは文字集合への所属を調べるもので、シフトJISのバイト列を検証するものではありません。
+
+### APIでの指定方法とIVS/SVS
+
+この文字集合は `CharacterSet.JisX0208` としてAPIに指定します。`KanjiText.IsSupported` はASCIIを通過させ、それ以外の文字がJIS X 0208に対応するかを確認します。IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。ライブラリは登録済みのIVS/SVSを一つの漢字表現として解析し、`GetAlternatives` や `TryGetAlternative` で代替候補を調べられます。ただしVariation Selector付きの表記自体はJIS X 0208の収録文字ではないため、`Kanji.IsSupported` と `KanjiText.IsSupported` はその表記をサポート対象外（`false`）と判定します。`KanjiText.Replace` は登録済みシーケンス全体を検索し、代替候補が見つかれば対象文字集合に含まれる漢字へ置換します。
+
+### 対象外となる拡張文字
+
+`CharacterSet.JisX0208` が収録文字として扱うのは、JIS X 0208に定義された文字です。CP932（Windows-31J）はJIS X 0208を基礎にした文字コードで、丸数字や一部の漢字など、JIS X 0208の範囲外の文字を独自に追加しています。また、JIS X 0213はJIS X 0208を拡張した別の規格で、追加の漢字や記号を定めています。これらの追加文字は `CharacterSet.JisX0208` に含まれず、`Kanji.IsSupported`では漢字表現を、`KanjiText.IsSupported`では文字列中の該当文字をサポート対象外と判定します。`KanjiText.Replace`も、これらの文字を自動的にJIS X 0208の文字へ変換するものではありません。MJ縮退マップに該当する登録があり、変換先がJIS X 0208に含まれる場合に限って置換します。
+
+## 使い方
 
 ```csharp
 using KanjiVariants;
@@ -24,6 +40,10 @@ var usable = KanjiText.IsSupported(converted, CharacterSet.JisX0208);
 | `KanjiText.IsSupported` | 文字列全体を指定集合で検証 | 任意の文字列 |
 
 `GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表による結果です。候補一覧が1件かどうかで一意な変換先を決めるものではありません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
+
+## 一意な変換先の一覧
+
+MJ縮退マップの一意な変換表から作成した一覧を [`data/MJUniqueAlternatives.1.2.0.csv`](data/MJUniqueAlternatives.1.2.0.csv) として同梱しています。各行はMJ文字図形名ごとの変換元表現と一意な変換先を示し、登録済みIVS/SVSも別行で掲載します。同じUnicode表現が複数行に現れる場合があります。MJ文字図形名で区別される字形ごとに変換先が異なることがあるためです。この一覧はJIS X 0208への収録可否で絞り込んでいません。変換先のUCSと、データに記録がある場合はJIS X 0213の面区点位置を掲載しています。
 
 ## 文字列処理のルール
 
@@ -69,3 +89,7 @@ dotnet run --project KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 | JIS X 0208 の Unicode 対応 | Python の `euc_jp` デコーダーで区点 1–94 を走査して生成。Windows CP932 の拡張文字は含めない。 |
 
 MJデータの著作権者は独立行政法人情報処理推進機構（IPA）です。MJ文字情報一覧表とMJ縮退マップは [CC BY-SA 2.1 JP](https://creativecommons.org/licenses/by-sa/2.1/jp/) により提供されています。Unicode のデータは [Unicode Terms of Use](https://www.unicode.org/terms_of_use.html) に従います。
+
+## 免責事項
+
+本ライブラリおよび同梱データは現状のまま提供されます。本ライブラリまたは同梱データの利用により発生したいかなる損害についても、作者は一切責任を負いません。ライセンス条件の異なる同梱データについては、`LICENSE-NOTICES.md` もご確認ください。

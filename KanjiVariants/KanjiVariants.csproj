@@ -3,7 +3,15 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <PackageId>KanjiVariants</PackageId>
-    <Description>Japanese kanji alternatives based on the MJ contraction map.</Description>
+    <Authors>Koichi Kobayashi</Authors>
+    <Description>MJ縮退マップに基づく漢字代替候補の検索と置換を行う .NET 6 ライブラリです。変換先は現在JIS X 0208の文字集合で絞り込みます。Shift-JIS全体の文字検査や旧字体全般の変換を目的とするものではありません。</Description>
+    <PackageTitle>KanjiVariants</PackageTitle>
+    <PackageTags>kanji;Japanese;Unicode;JIS X 0208;IVS;SVS</PackageTags>
+    <PackageReleaseNotes>初回リリース。</PackageReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE-NOTICES.md</PackageLicenseFile>
+    <Copyright>Copyright (c) 2026 Koichi Kobayashi</Copyright>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -11,6 +19,12 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="KanjiVariants.Benchmarks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE-NOTICES.md" Pack="true" PackagePath="\" />
+    <None Include="..\data\MJUniqueAlternatives.1.2.0.csv" Pack="true" PackagePath="data\" />
   </ItemGroup>
 
 </Project>
