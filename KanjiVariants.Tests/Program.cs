@@ -44,6 +44,15 @@ Check(!KanjiCharacter.TryParse("A", out _), "reject Latin");
 Check(!KanjiCharacter.TryParse("高橋", out _), "reject multiple scalars");
 Check(KanjiCharacter.TryParse("\u3404\U000E0101", out _), "registered IVS");
 Check(KanjiCharacter.TryParse("\u6B04\uFE00", out _), "registered SVS");
+// 2026-08-03版IVDで新規登録されたシーケンスが、生成データから認識できることを確認します。
+var newlyRegisteredIvs = new[]
+{
+    "\u7CA4\U000E0103", "\u805A\U000E0104", "\U00020509\U000E0103",
+    "\U00023AA3\U000E0100", "\U00023AA3\U000E0101",
+    "\U00026BE7\U000E0100", "\U00026BE7\U000E0101"
+};
+Check(newlyRegisteredIvs.All(value => KanjiCharacter.TryParse(value, out _)),
+    "2026-08-03 IVD additions registered");
 Check(!KanjiCharacter.TryParse("髙\uFE0F", out _), "reject unregistered sequence");
 Check(KanjiText.Replace("髙\uFE0F", set) == "髙\uFE0F", "preserve unregistered sequence");
 

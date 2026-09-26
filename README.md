@@ -96,7 +96,7 @@ dotnet run --project KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 |---|---|
 | MJ文字情報一覧表 | Ver.006.02、[文字情報技術促進協議会](https://moji.or.jp/mojikiban/mjlist/) |
 | MJ縮退マップ、MJ縮退マップ 一意な変換表 | Ver.1.2.0、[文字情報技術促進協議会](https://moji.or.jp/mojikiban/map/) |
-| Unicode IVD | 2025-07-14、[Unicode IVD](https://www.unicode.org/ivd/data/2025-07-14/) |
+| Unicode IVD | 2026-08-03、[Unicode IVD](https://www.unicode.org/ivd/data/2026-08-03/) |
 | Unicode Standardized Variants | Unicode 18.0.0、[Unicode Character Database](https://www.unicode.org/Public/UCD/latest/ucd/StandardizedVariants.txt) |
 | JIS X 0208 の Unicode 対応 | Python の `euc_jp` デコーダーで区点 1–94 を走査して生成。Windows CP932 の拡張文字は含めない。 |
 
