@@ -3,13 +3,33 @@
 
 namespace KanjiVariants;
 
+[Flags]
+internal enum CharacterSetFlags : byte
+{
+    None = 0,
+    JisX0208 = 1 << 0,
+    JisX0213Plane1 = 1 << 1,
+    JisX0213Plane2 = 1 << 2,
+}
+
 internal static class Lookup
 {
     internal static bool IsSupported(int codePoint, CharacterSet characterSet)
     {
-        Validate(characterSet);
-        // JIS X 0208 は BMP 内なので、生成済みフラグ配列を直接参照します。
-        return codePoint < GeneratedData.JisX0208Flags.Length && GeneratedData.JisX0208Flags[codePoint] != 0;
+        // 通常のコードポイントだけに付けた所属bitを参照し、各公開文字集合を共通の規則で判定します。
+        CharacterSetFlags flags = (uint)codePoint < (uint)GeneratedData.BmpCharacterSetFlags.Length
+            ? (CharacterSetFlags)GeneratedData.BmpCharacterSetFlags[codePoint]
+            : (uint)(codePoint - 0x20000) < (uint)GeneratedData.SupplementaryCharacterSetFlags.Length
+                ? (CharacterSetFlags)GeneratedData.SupplementaryCharacterSetFlags[codePoint - 0x20000]
+                : CharacterSetFlags.None;
+        return characterSet switch
+        {
+            CharacterSet.JisX0208 => (flags & CharacterSetFlags.JisX0208) != 0,
+            CharacterSet.JisX0213Plane1 => (flags & CharacterSetFlags.JisX0213Plane1) != 0,
+            CharacterSet.JisX0213Plane2 => (flags & CharacterSetFlags.JisX0213Plane2) != 0,
+            CharacterSet.JisX0213 => (flags & (CharacterSetFlags.JisX0213Plane1 | CharacterSetFlags.JisX0213Plane2)) != 0,
+            _ => throw new ArgumentOutOfRangeException(nameof(characterSet)),
+        };
     }
 
     // 文字集合への登録有無とは分け、漢字範囲またはMJ文字情報のある文字を解析対象にします。
@@ -55,7 +75,7 @@ internal static class Lookup
 
     internal static void Validate(CharacterSet characterSet)
     {
-        if (characterSet != CharacterSet.JisX0208)
+        if ((uint)characterSet > (uint)CharacterSet.JisX0213)
             throw new ArgumentOutOfRangeException(nameof(characterSet));
     }
 

@@ -105,7 +105,7 @@ public static class Kanji
         TryGetAlternative(KanjiCharacter.Parse(character), characterSet, out alternative, options);
 
     /// <summary>漢字表現そのものが指定文字集合に含まれるかを判定します。</summary>
-    /// <param name="character">所属を調べる漢字。Variation Selector 付きの表現は JIS X 0208 では false です。</param>
+    /// <param name="character">所属を調べる漢字。Variation Selector 付きの表現は各文字集合で false です。</param>
     /// <param name="characterSet">所属を確認する文字集合。</param>
     /// <returns>漢字表現が文字集合に含まれる場合は true。</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="characterSet"/> が未定義の値の場合。</exception>
