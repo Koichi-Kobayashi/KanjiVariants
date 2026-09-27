@@ -1,31 +1,38 @@
 # KanjiVariants
 
-MJ縮退マップに基づいて漢字の代替候補を検索し、一意な変換先が定義されている文字を置換する .NET 6 ライブラリです。変換先は指定した文字集合で絞り込み、現在は `CharacterSet.JisX0208` を提供しています。
+MJ縮退マップに基づいて漢字の代替候補を検索し、一意な変換先が定義されている文字を置換する .NET 6 ライブラリです。JIS X 0208 / JIS X 0213 の文字集合を対象にできます。
 
 このライブラリは、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。
 
-## `CharacterSet.JisX0208` とは
+## 対応する CharacterSet
 
-JIS X 0208 は、日本語の文章で使う漢字や記号などを定めた文字集合です。漢字は第1水準漢字・第2水準漢字に分類されますが、これらは別々の文字集合ではなく、JIS X 0208 内部の分類です。
+### `CharacterSet.JisX0208`
 
-```text
-JIS X 0208
-├─ 非漢字
-├─ 第1水準漢字
-└─ 第2水準漢字
-```
+JIS X 0208 全体を対象とします。
 
-`CharacterSet.JisX0208` はJIS X 0208全体を対象とするため、第1水準漢字と第2水準漢字の両方を含みます。現時点では、第1水準のみ、または第2水準のみを個別に指定するAPIはありません。非漢字の記号・かな・英数字などもJIS X 0208に規定されています。このライブラリでは、JIS X 0208の区点位置をUnicodeに対応付けた文字を、代替候補の変換先として使います。これは文字集合への所属を調べるもので、シフトJISのバイト列を検証するものではありません。
+- 第1水準漢字
+- 第2水準漢字
+- JIS X 0208 に含まれるその他の文字
 
-### APIでの指定方法とIVS/SVS
+第1水準漢字・第2水準漢字は別々の文字集合ではなく、JIS X 0208 内部の分類です。現時点では、第1水準のみ、または第2水準のみを個別に指定するAPIはありません。
 
-この文字集合は `CharacterSet.JisX0208` としてAPIに指定します。`KanjiText.IsSupported` はASCIIを通過させ、それ以外の文字がJIS X 0208に対応するかを確認します。IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。ライブラリは登録済みのIVS/SVSを一つの漢字表現として解析し、`GetAlternatives` や `TryGetAlternative` で代替候補を調べられます。ただしVariation Selector付きの表記自体はJIS X 0208の収録文字ではないため、`Kanji.IsSupported` と `KanjiText.IsSupported` はその表記をサポート対象外（`false`）と判定します。`KanjiText.Replace` は登録済みシーケンス全体を検索し、公式の一意な変換先が使用可能ならそれを採用します。`KanjiFallbackOptions.AllowVariationSelectorFallback` を指定した場合は、一意な変換先が使用できず、基底文字が指定集合に含まれるときに基底文字へフォールバックします。
+### `CharacterSet.JisX0213Plane1`
 
-### 対象外となる拡張文字
+JIS X 0213 第1面だけを対象とします。第1面にはJIS X 0208由来の文字に加えて、JIS X 0213で追加された文字もあります。そのため、JIS X 0213 第1面とJIS X 0208は同じ集合ではありません。
 
-`CharacterSet.JisX0208` が収録文字として扱うのは、JIS X 0208に定義された文字です。CP932（Windows-31J）はJIS X 0208を基礎にした文字コードで、丸数字や一部の漢字など、JIS X 0208の範囲外の文字を独自に追加しています。また、JIS X 0213はJIS X 0208を拡張した別の規格で、追加の漢字や記号を定めています。これらの追加文字は `CharacterSet.JisX0208` に含まれず、`Kanji.IsSupported`では漢字表現を、`KanjiText.IsSupported`では文字列中の該当文字をサポート対象外と判定します。`KanjiText.Replace`も、これらの文字を自動的にJIS X 0208の文字へ変換するものではありません。MJ縮退マップに該当する登録があり、変換先がJIS X 0208に含まれる場合に限って置換します。
+### `CharacterSet.JisX0213Plane2`
+
+JIS X 0213 第2面だけを対象とします。第1面の文字は、`JisX0213Plane2` では使用可能（supported）になりません。
+
+### `CharacterSet.JisX0213`
+
+JIS X 0213 第1面または第2面に含まれる文字を対象とします。概念的には、`JisX0213Plane1` または `JisX0213Plane2` のいずれかに含まれる文字集合です。
+
+第1水準／第2水準はJIS X 0208内の漢字分類、第1面／第2面はJIS X 0213の面を表します。したがって、第1水準と第1面、第2水準と第2面はそれぞれ別の概念です。
 
 ## 使い方
+
+JIS X 0208を対象にする場合は、これまでどおり `CharacterSet.JisX0208` を指定します。
 
 ```csharp
 using KanjiVariants;
@@ -36,11 +43,39 @@ var converted = KanjiText.Replace("髙橋𠮷野", CharacterSet.JisX0208);
 var usable = KanjiText.IsSupported(converted, CharacterSet.JisX0208);
 ```
 
-`GetAlternatives` は縮退マップ中の候補を重複なく返します。`TryGetAlternative` と `KanjiText.Replace` は、候補数ではなく公式の一意な変換表を優先します。変換先が JIS X 0208 にないときは採用しません。`Replace` は入力文字がすでに使用可能なら維持します。置換できない文字や不正な UTF-16 はそのまま残り、`IsSupported` で結果を検証できます。登録済み IVS/SVS は一つの漢字表現として解析され、未登録のシーケンスでは基底文字だけを置換しません。
+JIS X 0213の面ごと、または両面を対象にできます。
 
-### IVS/SVSのフォールバック
+```csharp
+var supportedPlane1 = Kanji.IsSupported("丑", CharacterSet.JisX0213Plane1);
+var supportedPlane2 = Kanji.IsSupported("丑", CharacterSet.JisX0213Plane2);
+var supportedJisX0213 = Kanji.IsSupported("丑", CharacterSet.JisX0213);
 
-登録済みIVS/SVSから基底文字へのフォールバックは、オプションを指定した場合だけ行います。例えば一点しんにょうの字形を指定する「辻󠄀」は、`辻`（U+8FBB）とVariation Selector（U+E0100）の登録済みシーケンスで、基底文字の `辻` に置換できます。
+// supportedPlane1 == true
+// supportedPlane2 == false
+// supportedJisX0213 == true
+```
+
+この例では、bare Unicodeコードポイントの `丑`（U+4E11）はJIS X 0213第1面に含まれるものとして判定されます。同じUnicodeコードポイントに異なる字形のMJ文字がある場合、その所属は対応する代表情報に基づいて判定されます。
+
+入力文字列に異なる文字集合由来の文字が混在していても、特別なAPIは必要ありません。指定する `CharacterSet` は入力の出自ではなく、変換後に使用可能としたい文字集合です。
+
+```csharp
+var jis0208Text = KanjiText.Replace(input, CharacterSet.JisX0208);
+// JIS X 0208に含まれる文字は維持します。
+// 含まれない文字は、一意な代替文字がJIS X 0208にあれば置換します。
+// 代替できない文字は元のまま残します。
+
+var jis0213Text = KanjiText.Replace(input, CharacterSet.JisX0213);
+// JIS X 0213の第1面または第2面で使用可能な文字は維持します。
+```
+
+`Replace` は、入力文字が指定された文字集合で使用可能ならそのまま維持します。使用できない場合はMJ縮退マップの一意な変換先を調べ、変換先が指定された `CharacterSet` に含まれる場合に置換します。置換先が使えない、または一意な変換先がない場合は、元の文字を残します。
+
+### IVS/SVS
+
+IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。登録済みのIVS/SVSは一つの漢字表現として解析し、代替候補を調べられます。Variation Sequence自体は、`JisX0208`、`JisX0213Plane1`、`JisX0213Plane2`、`JisX0213` のいずれでも supported とは判定されません。
+
+一点しんにょうの字形を指定する「辻󠄀」は、`辻`（U+8FBB）とVariation Selector（U+E0100）の登録済みシーケンスです。基底文字へのフォールバックは、`KanjiFallbackOptions.AllowVariationSelectorFallback` を指定した場合だけ行います。
 
 ```csharp
 var options = KanjiFallbackOptions.AllowVariationSelectorFallback;
@@ -48,7 +83,13 @@ var result = KanjiText.Replace("辻\U000E0100", CharacterSet.JisX0208, options);
 // result == "辻"
 ```
 
-デフォルトの `KanjiFallbackOptions.None` ではVariation Selectorを削除しません。フォールバックでは指定されていた字形情報が失われます。公式の一意な変換先が対象集合に含まれる場合は、オプション指定時もその変換先を優先します。未登録のIVS/SVSや、基底文字が対象集合に含まれない場合はフォールバックしません。
+MJ縮退マップの一意な変換先が指定された文字集合で使用可能なら、Variation Selectorを除くフォールバックより優先します。一意な変換先が使えない場合でも、基底文字が指定された `CharacterSet` に含まれなければフォールバックしません。未登録のVariation Sequenceもフォールバック対象外です。`KanjiFallbackOptions.None` ではVariation Selectorを削除しません。フォールバックではVariation Selectorが指定していた字形情報が失われます。また、フォールバックした基底文字を、同じ呼び出しの中でさらにMJ縮退マップにより置換することはありません。
+
+### CP932（Windows-31J）などの対象外文字
+
+`CharacterSet.JisX0208` が対象とするのはJIS X 0208に定義された文字です。CP932（Windows-31J）はJIS X 0208を基礎にした符号化方式ですが、独自の拡張文字を含みます。また、JIS X 0213ではJIS X 0208にない文字も追加されています。これらをJIS X 0208の文字と同一視することはありません。
+
+文字が指定された `CharacterSet` に含まれない場合、`Kanji.IsSupported` はその漢字表現を、`KanjiText.IsSupported` は文字列中の該当文字を supported ではないと判定します。`KanjiText.Replace` は対象外文字を自動的に別の文字へ変換するものではなく、MJ縮退マップに対応があり、一意な変換先が指定された `CharacterSet` に含まれる場合に限り置換します。
 
 ## API の使い分け
 
@@ -56,50 +97,53 @@ var result = KanjiText.Replace("辻\U000E0100", CharacterSet.JisX0208, options);
 |---|---|---|
 | `Kanji.GetAlternatives` | MJ縮退マップにある候補を一覧取得。オプション指定時は登録済みIVS/SVSの基底文字も候補に追加 | 漢字一文字、または登録済み IVS/SVS |
 | `Kanji.TryGetAlternative` | MJ縮退マップの一意な変換先を優先。使用できない場合、オプション指定時は登録済みIVS/SVSの基底文字を取得 | 漢字一文字、または登録済み IVS/SVS |
-| `Kanji.IsSupported` | 漢字表現そのものが指定集合に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
+| `Kanji.IsSupported` | 漢字表現そのものが指定された `CharacterSet` に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
-| `KanjiText.IsSupported` | 文字列全体を指定集合で検証 | 任意の文字列 |
+| `KanjiText.IsSupported` | 文字列全体を指定された `CharacterSet` で検証 | 任意の文字列 |
 
-`GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表を優先した結果です。候補一覧が1件かどうかで一意な変換先を決めるものではありません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
+`GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表を優先した結果です。候補一覧が1件でも、それだけで一意な変換先とは判断しません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
 
 ## 一意な変換先の一覧
 
-MJ縮退マップの一意な変換表から作成した一覧を [`data/MJUniqueAlternatives.1.2.0.csv`](data/MJUniqueAlternatives.1.2.0.csv) として同梱しています。各行はMJ文字図形名ごとの変換元表現と一意な変換先を示し、登録済みIVS/SVSも別行で掲載します。同じUnicode表現が複数行に現れる場合があります。MJ文字図形名で区別される字形ごとに変換先が異なることがあるためです。この一覧はJIS X 0208への収録可否で絞り込んでいません。変換先のUCSと、データに記録がある場合はJIS X 0213の面区点位置を掲載しています。
+MJ縮退マップの一意な変換表から作成した一覧を [`data/MJUniqueAlternatives.1.2.0.csv`](data/MJUniqueAlternatives.1.2.0.csv) として同梱しています。各行はMJ文字図形名ごとの変換元表現と一意な変換先を示し、登録済みIVS/SVSも別行で掲載します。同じUnicode表現が複数行に現れる場合があります。MJ文字図形名で区別される字形ごとに変換先が異なることがあるためです。この一覧は特定の文字集合への収録可否で絞り込んでいません。変換先のUCSと、データに記録がある場合はJIS X 0213の面区点位置を掲載しています。
 
 ## 文字列処理のルール
 
-- ASCII は使用可能として通過します。それ以外の文字は JIS X 0208 への収録を確認します。
-- JIS X 0208 は IVS/SVS のシーケンスを含まないため、Variation Selector 付き表現の `IsSupported` は `false` です。
-- 登録済み IVS/SVS は一つの単位として検索します。基底文字へのフォールバックはオプション指定時に限ります。未登録シーケンスは基底文字へ分解せず、そのまま残します。
-- `Replace` は対象集合で使用可能な入力文字を維持します。それ以外は公式の一意な変換先を優先し、使用できない場合は明示指定されたフォールバックを試します。結果の完全な検証には `KanjiText.IsSupported` を使います。
-- `Replace` は不正な UTF-16 を例外にせず保持して走査を続けます。`IsSupported` は不正な UTF-16 があれば `false` を返します。
-- `Replace` と `IsSupported` に null を渡すと `ArgumentNullException` が発生します。
+- ASCIIは使用可能として通過します。ASCII以外の文字は、指定された `CharacterSet` への収録を確認します。
+- 通常のVariation Selectorを伴わないUnicodeコードポイントは、そのコードポイントの文字集合所属を確認します。
+- 登録済みIVS/SVSは一つの単位として扱いますが、シーケンス自体はsupportedではありません。未登録Variation Sequenceもsupportedではなく、基底文字だけを切り離して判定しません。
+- `Replace` は指定された文字集合で使用可能な文字を維持します。使用できない文字はMJ縮退マップの一意な変換先を確認し、変換先が指定集合に含まれる場合に置換します。
+- 一意な変換先が使えず、登録済みIVS/SVSに `AllowVariationSelectorFallback` が指定されている場合は、基底文字が指定集合に含まれるときに基底文字へフォールバックします。未登録シーケンスや、指定集合に含まれない基底文字はフォールバックしません。
+- 一意な変換先と基底文字へのフォールバックのどちらも使えない場合は、元の文字を残します。フォールバック後の基底文字を同じ呼び出しの中でさらにMJ縮退しません。
+- 置換後の文字列全体を検証するには `KanjiText.IsSupported` を使います。置換できない文字が残る場合、結果全体はsupportedにならないことがあります。
+- `Replace` は不正なUTF-16を例外にせず保持して走査を続けます。`IsSupported` は不正なUTF-16があれば `false` を返します。
+- `Replace` と `IsSupported` にnullを渡すと `ArgumentNullException` が発生します。
 
 ```csharp
 if (Kanji.TryGetAlternative("髙", CharacterSet.JisX0208, out var replacement))
     Console.WriteLine(replacement); // 高
 
-var result = KanjiText.Replace(input, CharacterSet.JisX0208);
-if (!KanjiText.IsSupported(result, CharacterSet.JisX0208))
+var result = KanjiText.Replace(input, CharacterSet.JisX0213);
+if (!KanjiText.IsSupported(result, CharacterSet.JisX0213))
     Console.WriteLine("置換できない文字が残っています。");
 ```
 
-公開メソッドの引数、戻り値、例外の説明は XML ドキュメントコメントにも記載しています。`dotnet build` で `KanjiVariants.xml` が生成されます。
+公開メソッドの引数、戻り値、例外の説明はXMLドキュメントコメントにも記載しています。`dotnet build` で `KanjiVariants.xml` が生成されます。
 
 ## ビルドと検証
 
 ```powershell
 dotnet build KanjiVariants.slnx -c Release
-dotnet run --project KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
+dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 ```
 
-テストは外部パッケージを使用しない実行形式です。生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。入力を変更しない場合は同じ `GeneratedData.g.cs` が生成されます。
+ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。入力データが変わらなければ、同じ `GeneratedData.g.cs` が生成されます。
 
-性能計測は別プロジェクトで実行します。`dotnet run --project KanjiVariants.Benchmarks/KanjiVariants.Benchmarks.csproj -c Release -- --filter "*"` は BenchmarkDotNet を復元し、検索・置換とメモリ割り当てを計測します。
+性能計測は別プロジェクトで実行します。`dotnet run --project KanjiVariants.Benchmarks/KanjiVariants.Benchmarks.csproj -c Release -- --filter "*"` はBenchmarkDotNetを復元し、検索・置換とメモリ割り当てを計測します。
 
 ## データと出典
 
-`data/` に生成元を固定し、ランタイムでは `GeneratedData.g.cs` の配列だけを使います。
+生成元データを `data/` に固定し、実行時には生成済みデータを使います。JIS X 0213の所属情報は、MJ文字情報一覧表 Ver.006.02の「実装したUCS」と「X0213」に基づいています。
 
 | データ | バージョン・出典 |
 |---|---|
@@ -107,15 +151,15 @@ dotnet run --project KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 | MJ縮退マップ、MJ縮退マップ 一意な変換表 | Ver.1.2.0、[文字情報技術促進協議会](https://moji.or.jp/mojikiban/map/) |
 | Unicode IVD | 2026-08-03、[Unicode IVD](https://www.unicode.org/ivd/data/2026-08-03/) |
 | Unicode Standardized Variants | Unicode 18.0.0、[Unicode Character Database](https://www.unicode.org/Public/UCD/latest/ucd/StandardizedVariants.txt) |
-| JIS X 0208 の Unicode 対応 | Python の `euc_jp` デコーダーで区点 1–94 を走査して生成。Windows CP932 の拡張文字は含めない。 |
+| JIS X 0208 の Unicode 対応 | Pythonの `euc_jp` デコーダーで区点1–94を走査して生成。Windows CP932の拡張文字は含めない。 |
 
 ### 日本語IVSの閲覧用一覧
 
-[`data/Japanese_IVS_2026-08-03.xlsx`](data/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) から Moji_Joho、Adobe-Japan1、Hanyo-Denshi のCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
+[`data/Japanese_IVS_2026-08-03.xlsx`](data/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) からMoji_Joho、Adobe-Japan1、Hanyo-DenshiのCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
 
 IPAmj明朝の配布元は、同フォントのIVS実装が2017-12-12版のMoji_Johoコレクションに準拠すると説明しています。そのため、Adobe-Japan1やHanyo-Denshiのシーケンス、または後のIVDで追加されたシーケンスでは、Excel上で指定された字形が表示されるとは限りません。見た目が同じでもVariation Selectorがないとは判断せず、符号位置を確認してください。
 
-MJデータの著作権者は独立行政法人情報処理推進機構（IPA）です。MJ文字情報一覧表とMJ縮退マップは [CC BY-SA 2.1 JP](https://creativecommons.org/licenses/by-sa/2.1/jp/) により提供されています。Unicode のデータは [Unicode Terms of Use](https://www.unicode.org/terms_of_use.html) に従います。
+MJデータの著作権者は独立行政法人情報処理推進機構（IPA）です。MJ文字情報一覧表とMJ縮退マップは [CC BY-SA 2.1 JP](https://creativecommons.org/licenses/by-sa/2.1/jp/) により提供されています。Unicodeのデータは [Unicode Terms of Use](https://www.unicode.org/terms_of_use.html) に従います。
 
 ## 免責事項
 

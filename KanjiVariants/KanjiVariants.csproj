@@ -4,9 +4,9 @@
     <TargetFramework>net6.0</TargetFramework>
     <PackageId>KanjiVariants</PackageId>
     <Authors>Koichi Kobayashi</Authors>
-    <Description>MJ縮退マップに基づく漢字代替候補の検索と置換を行う .NET 6 ライブラリです。変換先は現在JIS X 0208の文字集合で絞り込みます。Shift-JIS全体の文字検査や旧字体全般の変換を目的とするものではありません。</Description>
+    <Description>MJ縮退マップに基づいて日本語の漢字代替候補を検索・置換する .NET ライブラリです。JIS X 0208、JIS X 0213、および登録済みIVS/SVSに対応しています。</Description>
     <PackageTitle>KanjiVariants</PackageTitle>
-    <PackageTags>kanji;Japanese;Unicode;JIS X 0208;IVS;SVS</PackageTags>
+    <PackageTags>kanji;japanese;unicode;jis;jisx0208;jisx0213;ivs;svs;mj;dotnet</PackageTags>
     <PackageReleaseNotes>初回リリース。</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE-NOTICES.md</PackageLicenseFile>
