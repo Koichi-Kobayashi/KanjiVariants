@@ -81,6 +81,7 @@ V1では以下を対象とする。
 - 一意に決定された代替文字の取得
 - 文字列中の漢字を代替文字へ置換
 - 指定文字集合で文字・文字列を使用可能か判定
+- `JisX0208`、`JisX0213Plane1`、`JisX0213Plane2`、`JisX0213` による対象文字集合の指定
 - Unicode補助平面の漢字への対応
 - IVS / SVSを考慮した漢字表現
 - 登録済みIVS / SVSについて、明示的なオプション指定による基底文字へのフォールバック
@@ -639,9 +640,12 @@ BaseCharacter + VariationSelector
 ulong UnicodeKey
     ↓
 BinarySearch
-    ├─ EntryIndex
-    └─ CharacterSetFlags
+    └─ EntryIndex
 ```
+
+IVS / SVSのキーは登録済みシーケンスと代替情報の検索に使用する。
+JIS X 0208 / JIS X 0213への所属情報は持たせず、
+Variation Sequenceそのものをsupportedとは判定しない。
 
 V1では自前のBinary Searchは実装せず、
 まず `Array.BinarySearch()` を使用する。
@@ -659,20 +663,23 @@ internal enum CharacterSetFlags : byte
 {
     None = 0,
     JisX0208 = 1 << 0,
+    JisX0213Plane1 = 1 << 1,
+    JisX0213Plane2 = 1 << 2,
 }
 ```
 
 公開APIの `CharacterSet` と、
 内部の所属情報である `CharacterSetFlags` は分離する。
 
-将来、
+`CharacterSet.JisX0213` 専用のbitは持たせない。
+`CharacterSet.JisX0213` は概念上、
 
 ```csharp
-CharacterSet.JisX0213
+(flags & (CharacterSetFlags.JisX0213Plane1
+        | CharacterSetFlags.JisX0213Plane2)) != 0
 ```
 
-などを追加した場合も、
-内部Flagsを追加することで複数文字集合への所属を表現できる。
+として判定し、通常UCSのflagsが第1面または第2面のどちらかを持てば使用可能とする。
 
 
 ### 内部Lookup API
@@ -690,6 +697,8 @@ private static bool TryLookup(
 
 通常UCSではDirect Lookup、
 IVS / SVSでは複合キーによるBinary Searchを使用する。
+IVS / SVSの検索結果は登録シーケンスと代替情報を返し、
+`CharacterSetFlags.None` を返す。所属フラグは持たせない。
 
 Public APIで `KanjiCharacter` を扱う場合も、
 文字列走査中のホットパスも、
@@ -1171,7 +1180,7 @@ ASCII
 → Direct LookupでCharacterSetFlagsを確認
 
 登録済みIVS / SVS
-→ シーケンスそのもののCharacterSetFlagsを確認
+→ シーケンスそのものは対象CharacterSetで使用不可（false）
 
 未登録の Base + VS
 → false
@@ -1180,9 +1189,11 @@ ASCII
 → false
 ```
 
-`CharacterSet.JisX0208` では、
-Variation Selectorを含むシーケンスそのものは
-JIS X 0208に存在しないため `false` となる。
+登録済みIVS / SVSは、
+Variation Sequenceそのものを
+`JisX0208` / `JisX0213Plane1` / `JisX0213Plane2` / `JisX0213`
+のいずれでもsupportedとは判定しない。
+Variation Selector fallbackは `IsSupported()` の責務ではない。
 
 `Replace()` と `IsSupported()` の責務は引き続き、
 
@@ -1201,7 +1212,7 @@ IsSupported
 
 ## 12. `CharacterSet`
 
-V1ではまず以下のみ提供する。
+以下の文字集合を提供する。
 
 ```csharp
 public enum CharacterSet
@@ -1210,31 +1221,44 @@ public enum CharacterSet
     /// JIS X 0208。
     /// 第1水準および第2水準の漢字を含みます。
     /// </summary>
-    JisX0208
+    JisX0208,
+
+    /// <summary>
+    /// JIS X 0213 第1面。
+    /// </summary>
+    JisX0213Plane1,
+
+    /// <summary>
+    /// JIS X 0213 第2面。
+    /// </summary>
+    JisX0213Plane2,
+
+    /// <summary>
+    /// JIS X 0213 第1面および第2面。
+    /// </summary>
+    JisX0213
 }
 ```
 
-`JisX0208` は利用者にとって、
-
-> JIS第1水準・第2水準を含む文字集合
-
-として理解できるよう、ドキュメントで説明する。
-
-注意:
-
-JIS X 0213の「第1面 / 第2面」と、
-「JIS第1水準 / 第2水準」は別の概念。
+各値は次の文字集合を表す。
 
 ```text
-第1水準 ≠ 第1面
-第2水準 ≠ 第2面
+JisX0208
+→ JIS X 0208 全体。第1水準・第2水準の漢字を含む。
+
+JisX0213Plane1
+→ JIS X 0213 第1面に収録されている文字。
+
+JisX0213Plane2
+→ JIS X 0213 第2面に収録されている文字。
+
+JisX0213
+→ JIS X 0213 第1面または第2面に収録されている文字。
 ```
 
-### JIS X 0213 の第1面 / 第2面
-
-JIS X 0213 は、第1面と第2面の2つの面で構成される。
-
-概念的には、以下のような関係になる。
+JIS X 0213は、第1面と第2面の2つの面で構成される。
+第1面にはJIS X 0208由来の文字とJIS X 0213で追加された文字があり、
+第2面にはJIS X 0213で追加された漢字が収録されている。
 
 ```text
 JIS X 0213
@@ -1246,17 +1270,32 @@ JIS X 0213
    └─ JIS X 0213で追加された漢字
 ```
 
-そのため、
+「第1水準・第2水準」はJIS X 0208内の漢字分類であり、
+「第1面・第2面」とは別の概念である。
 
 ```text
-第1面 = JIS X 0208
+第1水準 ≠ 第1面
+第2水準 ≠ 第2面
 ```
 
-ではない。
+ここでいうbare Unicodeコードポイントは、
+Variation Selectorを伴わない単独のUnicode scalar value（Unicodeコードポイント）を指す。
 
-JIS X 0213の第1面には、
-JIS X 0208由来の文字だけでなく、
-JIS X 0213で追加された文字も含まれる。
+`JisX0213Plane2` を指定した場合、第1面の文字は `false` とする。
+
+```csharp
+Kanji.IsSupported("高", CharacterSet.JisX0213Plane2);
+// false
+```
+
+`JisX0213` は第1面または第2面のいずれかに収録されていれば `true` とする。
+
+```csharp
+Kanji.IsSupported("高", CharacterSet.JisX0213);
+// true
+```
+
+### JIS X 0213 の第1面 / 第2面
 
 JIS X 0213の面区点位置は、例えば以下のように表される。
 
@@ -1304,6 +1343,13 @@ JIS X 0208には含まれない追加文字も存在するため、
 > JIS X 0208に実際に収録されている文字かどうか
 
 を判定する必要がある。
+
+`TryGetAlternative()`、`Replace()`、`GetAlternatives()` は、
+JIS X 0208専用の規則ではなく、指定された `CharacterSet` に対して共通の所属判定を行う。
+`JisX0213Plane1` では第1面の候補だけを返し、
+`JisX0213Plane2` では第2面の候補だけを返す。
+`JisX0213` ではどちらかの面で使用可能な候補を返し、
+KanjiVariants独自の面の優先順位は設けない。
 
 
 ### MJ縮退マップ 一意な変換表と `CharacterSet.JisX0208`
@@ -1379,13 +1425,74 @@ JIS X 0208の所属情報そのものをビルド時に生成し、
 WindowsのCP932やShift_JISでエンコード可能かどうかを、
 そのままJIS X 0208の所属判定として使用しない。
 
-将来的に必要であれば、
+### JIS X 0213 の所属判定
 
-```csharp
-CharacterSet.JisX0213
+MJ文字情報一覧表 Ver.006.02 の `実装したUCS` と `X0213` を使用し、
+Variation Selectorを伴わないbare Unicodeコードポイントの所属を判定する。
+`対応するUCS` が同じMJ文字の所属情報を単純にOR集約してはならない。
+
+同じUnicodeコードポイントに複数のMJ文字図形が対応し、
+字形ごとにJIS X 0213の面が異なる場合があるためである。
+bare Unicodeコードポイントは、`実装したUCS` がそのコードポイントと一致する
+MJ文字の `X0213` に基づいて判定する。
+
+代表例として `丑`（U+4E11）には複数のMJ文字図形がある。
+
+```text
+MJ006315
+- 対応するUCS = U+4E11
+- 実装したUCS = U+4E11
+- Moji_Joho IVS = U+4E11 + U+E0101
+- X0213 = 1-17-15
+
+MJ006318
+- 対応するUCS = U+4E11
+- 実装したUCS = 空欄
+- Moji_Joho IVS = U+4E11 + U+E0102
+- X0213 = 2-01-04
+
+MJ006320
+- 対応するUCS = U+4E11
+- 実装したUCS = 空欄
+- Moji_Joho IVS = U+4E11 + U+E0104
+- X0213 = 2-01-04
+
+MJ056824
+- 対応するUCS = U+4E11
+- 実装したUCS = 空欄
+- Moji_Joho IVS = U+4E11 + U+E0103
+- X0213 = 空欄
 ```
 
-などを追加できる。
+bare `U+4E11` は、`実装したUCS = U+4E11` のMJ006315に基づき、
+第1面に所属すると判定する。
+
+```csharp
+Kanji.IsSupported("丑", CharacterSet.JisX0213Plane1);
+// true
+
+Kanji.IsSupported("丑", CharacterSet.JisX0213Plane2);
+// false
+
+Kanji.IsSupported("丑", CharacterSet.JisX0213);
+// true
+```
+
+`対応するUCS = U+4E11` のMJ文字の `X0213` を単純にOR集約し、
+第1面と第2面の両方に所属すると判定してはならない。
+
+MJ文字情報一覧表の `X0213` は `面-区-点` の形式として扱う。
+
+```text
+1-xx-xx → JisX0213Plane1
+2-xx-xx → JisX0213Plane2
+空欄    → JIS X 0213非所属
+```
+
+例えば `1-17-15` は第1面・区17・点15、
+`2-01-04` は第2面・区01・点04を表す。
+Generatorでは面・区・点の3要素として形式を検証し、
+不正な形式は入力データ異常として検出する。
 
 
 ---
@@ -1570,6 +1677,11 @@ KanjiFallbackOptions.AllowVariationSelectorFallback
 
 を条件とする。
 
+このルールは `JisX0208` とJIS X 0213の各 `CharacterSet` に共通して適用する。
+JIS X 0213専用のVariation Selector fallback規則は設けない。
+一意なMJ変換先が指定された集合で使用可能ならそれを優先し、
+使用できない場合に限り、登録済みシーケンスの基底文字が同じ集合で使用可能かを確認する。
+
 未登録Variation Sequenceは、
 たとえ基底文字自体が指定文字集合で使用可能であっても
 フォールバック対象にしない。
@@ -1615,14 +1727,20 @@ KanjiVariantsが区別可能なのは、
 主に以下の文字情報を取得する。
 
 - MJ文字図形名
-- UCS
+- 対応するUCS
+- 実装したUCS
 - IVS
 - SVS
 - 互換漢字
-- JIS X 0213
+- JIS X 0213 面区点
 - 戸籍統一文字番号
 - 登記統一文字番号
 - その他文字メタデータ
+
+bare UnicodeコードポイントのJIS X 0213所属は、
+`実装したUCS` を持つMJ文字の `X0213` から決定する。
+`対応するUCS` が同じという理由だけで、
+複数MJ文字の `X0213` 所属をOR集約しない。
 
 使用予定:
 
@@ -1885,8 +2003,7 @@ C#ソースコードを生成する方式を採用する。
 
 IVS / SVS
 ├─ ulong VariationKey
-├─ EntryIndex
-└─ CharacterSetFlags
+└─ EntryIndex
 
 Entry
 ├─ UniqueAlternativeCodePoint
@@ -1901,6 +2018,33 @@ Alternative
 Evidence
 └─ EvidenceEntry[]
 ```
+
+通常UCSのJIS X 0213所属フラグは、
+MJ文字情報一覧表の `実装したUCS` と `X0213` から生成する。
+
+```text
+通常UCS
+↓
+「実装したUCS」が一致するMJ文字を取得
+↓
+X0213 = 1-xx-xx → JisX0213Plane1
+X0213 = 2-xx-xx → JisX0213Plane2
+X0213 = 空欄    → JIS X 0213所属なし
+```
+
+`対応するUCS` が同じという理由だけで、
+複数MJ文字の `X0213` 所属をOR集約しない。
+`丑`（U+4E11）のように、第1面字形と第2面字形が同じbare Unicodeコードポイントに
+対応する場合があるため、bare Unicodeコードポイントの所属は
+`実装したUCS` を持つMJ文字を基準に決める。
+
+`X0213` は `面-区-点` の3要素として妥当性を検証する。
+不正な形式は黙って無視せず、Build-time Generatorで入力データ異常として検出する。
+
+IVS / SVSのVariation Sequence自体には、
+MJ文字情報一覧表の `X0213` をCharacterSet所属情報として付与しない。
+Variation Sequenceそのもののsupported判定は、
+bare Unicodeコードポイントの所属判定と分離する。
 
 型は原則として以下を使用する。
 
@@ -1961,6 +2105,8 @@ Unicode境界条件、IVS / SVS、不正UTF-16、内部最適化方針も含め�
 - 登録済みIVS / SVS + optionsなしでは基底文字を候補に追加しない
 - 登録済みIVS / SVS + AllowVariationSelectorFallback では基底文字を候補に追加できる
 - 基底文字が指定 CharacterSet 外の場合は候補に追加しない
+- `JisX0213Plane1` / `JisX0213Plane2` では各面で使用可能な候補だけを返す
+- `JisX0213` ではどちらかの面で使用可能な候補を返し、面の優先順位を設けない
 - 未登録 BaseCharacter + VariationSelector は
   AllowVariationSelectorFallback 指定時もフォールバックしない
 - MJ候補とVariation Selectorフォールバック先が同一の場合は重複させない
@@ -1975,6 +2121,8 @@ Unicode境界条件、IVS / SVS、不正UTF-16、内部最適化方針も含め�
 - MJ縮退マップに複数候補が存在していても、
   一意な変換表に変換先が定義されていれば取得できる
 - `GetAlternatives().Count == 1` を判定条件として使用しない
+- `JisX0213Plane1` / `JisX0213Plane2` では各面の所属に従って判定する
+- `JisX0213` では第1面または第2面の変換先を使用可能とする
 - 登録済みIVS / SVS + optionsなしでは基底文字へフォールバックしない
 - 登録済みIVS / SVS + AllowVariationSelectorFallback では基底文字へフォールバックできる
 - 基底文字が指定 CharacterSet 外の場合は false
@@ -1988,9 +2136,23 @@ Unicode境界条件、IVS / SVS、不正UTF-16、内部最適化方針も含め�
 
 - JIS X 0208内の文字
 - JIS X 0208外の文字
+- JIS X 0213第1面のみの文字
+- JIS X 0213第2面のみの文字
+- JIS X 0213外の文字
+- `JisX0213Plane1` / `JisX0213Plane2` / `JisX0213` の面別判定
+- `丑`（U+4E11）は `JisX0213Plane1` でtrue、`JisX0213Plane2` でfalse、`JisX0213` でtrue
+- 第1面のみの文字、第2面のみの文字、JIS X 0213外の文字を3種類のCharacterSetで判定する
 - 補助平面の漢字
-- 登録済みIVS / SVS
-- 未登録の `BaseCharacter + VariationSelector`
+- 登録済みIVS / SVSそのものは、`JisX0208` / `JisX0213Plane1` / `JisX0213Plane2` / `JisX0213` のいずれでもsupportedにならない
+- 未登録 `BaseCharacter + VariationSelector` は `false`
+
+`丑` の面別判定は、Public APIテストで次の結果を確認する。
+
+```csharp
+Kanji.IsSupported("丑", CharacterSet.JisX0213Plane1); // true
+Kanji.IsSupported("丑", CharacterSet.JisX0213Plane2); // false
+Kanji.IsSupported("丑", CharacterSet.JisX0213);       // true
+```
 
 
 ### `KanjiText.Replace()`
@@ -2010,6 +2172,7 @@ Unicode境界条件、IVS / SVS、不正UTF-16、内部最適化方針も含め�
   Variation Selectorだけを削除しない
 - 登録済みIVS / SVS + AllowVariationSelectorFallback では
   基底文字へフォールバックできる
+- JIS X 0213各集合でも、基底文字が指定集合で使用可能な場合に限り同じVS fallbackを適用する
 - 基底文字が指定 CharacterSet 外の場合は元のシーケンスを維持
 - 未登録 BaseCharacter + VariationSelector は
   AllowVariationSelectorFallback 指定時もシーケンス全体を維持
@@ -2076,6 +2239,14 @@ public void Replace_NoReplacement_ReturnsSameInstance()
 - Direct Lookup Tableの範囲外アクセスが発生しない
 - 存在しないコードポイントは `-1`
 - `CharacterSetFlags` が正しく生成される
+- `X0213 = 1-xx-xx` が `JisX0213Plane1` に変換される
+- `X0213 = 2-xx-xx` が `JisX0213Plane2` に変換される
+- `X0213` 空欄ではJIS X 0213フラグを付けない
+- 不正な `X0213` 形式を検出する
+- 「対応するUCS」が同じMJ文字の所属を単純OR集約しない
+- bare Unicodeコードポイントの所属判定に「実装したUCS」を使用する
+- U+4E11「丑」は `JisX0213Plane1` のみになる
+- IVS / SVSの `X0213` 情報をシーケンス自体の所属フラグに使用しない
 - IVS / SVSのVariationKeyが重複しない
 - VariationKeyが昇順に生成される
 - MJ縮退マップ 一意な変換表の「候補なし」U+FF3Fが `0` に変換される
