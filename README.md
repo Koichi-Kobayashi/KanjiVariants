@@ -1,8 +1,8 @@
 # KanjiVariants
 
-MJ縮退マップに基づいて漢字の代替候補を検索し、一意な変換先が定義されている文字を置換する .NET 6 ライブラリです。JIS X 0208 / JIS X 0213 の文字集合を対象にできます。
+MJ縮退マップに基づく漢字代替候補の検索・置換と、文化庁の常用漢字表の音訓索引の参照ができる .NET 6 ライブラリです。JIS X 0208 / JIS X 0213 の文字集合を対象にできます。
 
-このライブラリは、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。
+異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
 
 ## 対応する CharacterSet
 
@@ -91,6 +91,25 @@ MJ縮退マップの一意な変換先が指定された文字集合で使用可
 
 文字が指定された `CharacterSet` に含まれない場合、`Kanji.IsSupported` はその漢字表現を、`KanjiText.IsSupported` は文字列中の該当文字を supported ではないと判定します。`KanjiText.Replace` は対象外文字を自動的に別の文字へ変換するものではなく、MJ縮退マップに対応があり、一意な変換先が指定された `CharacterSet` に含まれる場合に限り置換します。
 
+## 常用漢字表の音訓索引
+
+`JoyoKanji` では、文化庁の本表字2136字について、旧字体等、音訓、語例、備考を参照できます。検索時だけひらがな・カタカナの差を吸収し、返す読みは原典表記のままです。読みの検索は完全一致です。
+
+```csharp
+var entry = JoyoKanji.Get("亜");
+Console.WriteLine(entry?.OldForm); // 亞
+
+foreach (var reading in JoyoKanji.GetReadings("高"))
+    Console.WriteLine($"{reading.Type}: {reading.Reading}");
+
+var matches = JoyoKanji.FindByReading("こう"); // 「コウ」も検索可能
+var onOnly = JoyoKanji.FindByReading("こう", KanjiReadingType.On);
+```
+
+本表に載る字体だけを常用漢字として扱います。`JoyoKanji.IsJoyo("亞")` と `JoyoKanji.IsJoyo("髙")` は `false` です。登録済みIVS/SVSも対象外です。`JoyoKanji` は異体字を自動縮退しません。必要に応じ、`Kanji.TryGetAlternative(...)` の結果を明示的に渡してください。
+
+`OldForm` は併記が1字のときだけ設定されます。「弁」のように複数ある場合は `OldForm == null` で、すべての候補を `OldForms` から参照できます。角括弧による字形注記を含む原典の文字欄は `SourceLabel` に保持します。備考欄は字単位の情報なので、各 `KanjiReading.Note` に同じ原文を入れています。どの音訓だけに適用されるかは推定していません。
+
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
@@ -137,7 +156,7 @@ dotnet build KanjiVariants.slnx -c Release
 dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 ```
 
-ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。入力データが変わらなければ、同じ `GeneratedData.g.cs` が生成されます。
+ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。MJ等の生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。常用漢字データは固定した `data/JoyoKanjiOnkunIndex.html` から `python tools/generate_joyo.py` で再生成できます。原典の取得を更新する場合だけ `python tools/fetch_joyo.py` を明示的に実行します。実行時のネットワーク接続は不要です。
 
 性能計測は別プロジェクトで実行します。`dotnet run --project KanjiVariants.Benchmarks/KanjiVariants.Benchmarks.csproj -c Release -- --filter "*"` はBenchmarkDotNetを復元し、検索・置換とメモリ割り当てを計測します。
 
@@ -150,8 +169,9 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 | MJ文字情報一覧表 | Ver.006.02、[文字情報技術促進協議会](https://moji.or.jp/mojikiban/mjlist/) |
 | MJ縮退マップ、MJ縮退マップ 一意な変換表 | Ver.1.2.0、[文字情報技術促進協議会](https://moji.or.jp/mojikiban/map/) |
 | Unicode IVD | 2026-08-03、[Unicode IVD](https://www.unicode.org/ivd/data/2026-08-03/) |
-| Unicode Standardized Variants | Unicode 18.0.0、[Unicode Character Database](https://www.unicode.org/Public/UCD/latest/ucd/StandardizedVariants.txt) |
+| Unicode Standardized Variants | Unicode 18.0.0、[Unicode Character Database](https://www.unicode.org/Public/18.0.0/ucd/StandardizedVariants.txt) |
 | JIS X 0208 の Unicode 対応 | Pythonの `euc_jp` デコーダーで区点1–94を走査して生成。Windows CP932の拡張文字は含めない。 |
+| 常用漢字表の音訓索引 | [文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)。公開HTMLを固定し、本表の文字・音訓・語例・備考をKanjiVariants用に抽出・再構成。 |
 
 ### 日本語IVSの閲覧用一覧
 
@@ -159,7 +179,7 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 
 IPAmj明朝の配布元は、同フォントのIVS実装が2017-12-12版のMoji_Johoコレクションに準拠すると説明しています。そのため、Adobe-Japan1やHanyo-Denshiのシーケンス、または後のIVDで追加されたシーケンスでは、Excel上で指定された字形が表示されるとは限りません。見た目が同じでもVariation Selectorがないとは判断せず、符号位置を確認してください。
 
-MJデータの著作権者は独立行政法人情報処理推進機構（IPA）です。MJ文字情報一覧表とMJ縮退マップは [CC BY-SA 2.1 JP](https://creativecommons.org/licenses/by-sa/2.1/jp/) により提供されています。Unicodeのデータは [Unicode Terms of Use](https://www.unicode.org/terms_of_use.html) に従います。
+MJデータの著作権者は独立行政法人情報処理推進機構（IPA）です。MJ文字情報一覧表とMJ縮退マップは [CC BY-SA 2.1 JP](https://creativecommons.org/licenses/by-sa/2.1/jp/) により提供されています。Unicodeのデータは [Unicode Terms of Use](https://www.unicode.org/terms_of_use.html) に従います。文化庁の公開情報は[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。出典と加工の詳細は `LICENSE-NOTICES.md` に記載しています。
 
 ## 免責事項
 
