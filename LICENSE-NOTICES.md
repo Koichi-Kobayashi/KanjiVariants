@@ -34,12 +34,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## 同梱文字データ
+## 文字データ
 
-`GeneratedData.g.cs` の表および `data/MJUniqueAlternatives.1.2.0.csv` には、以下の外部データに由来する内容が含まれます。これらのデータにはプログラムコードの MIT License ではなく、各出典元の条件が適用されます。
+`GeneratedData.g.cs` の表およびリポジトリで公開している `data/MJUniqueAlternatives.1.2.0.csv` には、以下の外部データに由来する内容が含まれます。これらのデータにはプログラムコードの MIT License ではなく、各出典元の条件が適用されます。
 
 - MJ文字情報一覧表およびMJ縮退マップ: 独立行政法人情報処理推進機構（IPA）提供。CC BY-SA 2.1 JP。ライセンス本文と条件は <https://creativecommons.org/licenses/by-sa/2.1/jp/> を参照してください。改変・再構成したデータを再配布する場合は、同ライセンスの表示および継承条件に従ってください。
-- Unicode IVD および Unicode Standardized Variants: Unicode, Inc. 提供。Unicode License および Unicode Terms of Use に従ってください。詳細は <https://www.unicode.org/terms_of_use.html> を参照してください。
+- Unicode IVD および Unicode Standardized Variants: Unicode, Inc. 提供。Unicode の利用条件 <https://www.unicode.org/terms_of_use.html> に従ってください。
 - JIS X 0208 対応表: Python の `euc_jp` デコーダーによる区点走査から生成しています。Python の文字コード実装および Unicode データに関する条件は、使用した Python ディストリビューションのライセンス・通知も確認してください。
 
 各データのバージョン、生成元および詳細は同梱の `README.md` を参照してください。

@@ -24,7 +24,6 @@
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\LICENSE-NOTICES.md" Pack="true" PackagePath="\" />
-    <None Include="..\data\MJUniqueAlternatives.1.2.0.csv" Pack="true" PackagePath="data\" />
   </ItemGroup>
 
 </Project>
