@@ -110,6 +110,18 @@ var onOnly = JoyoKanji.FindByReading("こう", KanjiReadingType.On);
 
 `OldForm` は併記が1字のときだけ設定されます。「弁」のように複数ある場合は `OldForm == null` で、すべての候補を `OldForms` から参照できます。角括弧による字形注記を含む原典の文字欄は `SourceLabel` に保持します。備考欄は字単位の情報なので、各 `KanjiReading.Note` に同じ原文を入れています。どの音訓だけに適用されるかは推定していません。
 
+## 人名用漢字
+
+`JinmeiyoKanji` は、MJ文字情報一覧表で「漢字施策 = 人名用漢字」とされた863字の「実装したUCS」を参照します。`IsJinmeiyoKanji` はその863字だけを判定します。`IsNameUsableKanji` は、常用漢字の本表字または人名用漢字に含まれる漢字を判定します。ひらがな・カタカナなど、名前に使える漢字以外の文字を判定するAPIではありません。
+
+```csharp
+bool jinmeiyo = JinmeiyoKanji.IsJinmeiyoKanji("丑"); // true
+bool usable = JinmeiyoKanji.IsNameUsableKanji("高"); // true（常用漢字）
+var all = JinmeiyoKanji.GetAll(); // 人名用漢字863字の共有一覧
+```
+
+旧字体・異体字を自動変換せず、IVS/SVS付き表現も基底文字へ自動フォールバックしません。判定対象は入力された文字そのものです。必要なら利用者が `Kanji.TryGetAlternative(...)` などで明示的に変換してから判定してください。
+
 ## 学年別漢字配当表（教育漢字）
 
 `EducationKanji` は、平成29年告示の小学校学習指導要領に掲載された配当漢字1,026字を、学年別に参照します。`GetByGrade()` は転記データの順で、共有の読み取り専用一覧を返します。
@@ -151,13 +163,14 @@ var kagura = JoyoKanjiAppendix.FindByReading("かぐら");
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
 | `KanjiText.IsSupported` | 文字列全体を指定された `CharacterSet` で検証 | 任意の文字列 |
 | `JoyoKanji` | 常用漢字表の本表字、旧字体等、音訓、語例、備考を参照 | 常用漢字表の本表字一文字 |
+| `JinmeiyoKanji` | 人名用漢字863字の判定と、常用漢字を含めた名前に使用可能な漢字の判定 | 漢字一文字。IVS/SVS付き表現は対象外 |
 | `EducationKanji` | 小学校の学年別漢字配当表を参照し、配当学年を取得 | 配当表に掲載された漢字一文字 |
 | `JoyoKanjiEducation` | 常用漢字の各音訓について、小学校・中学校・高等学校の指導段階を参照 | 常用漢字表の本表字一文字 |
 | `JoyoKanjiAppendix` | 常用漢字表の付表語や都道府県名の特別な読みを、語単位で検索 | 語または読み |
 
 `GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表を優先した結果です。候補一覧が1件でも、それだけで一意な変換先とは判断しません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
 
-常用漢字関連では、`JoyoKanji` が漢字と音訓そのもの、`EducationKanji` が小学校での漢字単位の配当学年、`JoyoKanjiEducation` が音訓単位の学校段階、`JoyoKanjiAppendix` が付表語・都道府県名の読みを担当します。
+常用漢字関連では、`JoyoKanji` が漢字と音訓そのもの、`EducationKanji` が小学校での漢字単位の配当学年、`JoyoKanjiEducation` が音訓単位の学校段階、`JoyoKanjiAppendix` が付表語・都道府県名の読みを担当します。`JinmeiyoKanji` は人名用漢字863字を参照し、常用漢字との和集合も判定します。
 
 ## 一意な変換先の一覧
 
@@ -195,6 +208,8 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 ```
 
 ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。MJ等の生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。常用漢字データは固定した `data/JoyoKanjiOnkunIndex.html` から `python tools/generate_joyo.py` で再生成できます。原典の取得を更新する場合だけ `python tools/fetch_joyo.py` を明示的に実行します。実行時のネットワーク接続は不要です。
+
+人名用漢字データは固定した `data/mji.00602.xlsx` から `python tools/generate_jinmeiyo.py` で再生成し、`python tools/generate_jinmeiyo.py --check` で生成結果との一致を確認できます。
 
 教育漢字データは `python tools/generate_education_kanji.py` で再生成し、`--check` で生成済みファイルとの一致を確認できます。平成29年告示版の原典PDFは画像の表なので、その転記を `data/EducationKanjiGradeTable.txt` に固定しています。Generatorは固定PDFのSHA-256と転記の件数・重複を検証します。原典の更新取得は `python tools/fetch_education_kanji.py` で明示的に行い、PDFが変わった場合は転記を再照合してください。
 

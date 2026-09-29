@@ -4,7 +4,7 @@
 
 ## プログラムコード
 
-KanjiVariants のプログラムコード（`GeneratedData.g.cs`、`GeneratedJoyoKanjiData.g.cs`、`GeneratedEducationKanjiData.g.cs`、`GeneratedJoyoKanjiEducationData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
+KanjiVariants のプログラムコード（`GeneratedData.g.cs`、`GeneratedJoyoKanjiData.g.cs`、`GeneratedEducationKanjiData.g.cs`、`GeneratedJoyoKanjiEducationData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
 
 MIT License の本文は以下のとおりです。
 
@@ -36,7 +36,7 @@ SOFTWARE.
 
 ## 文字データ
 
-`GeneratedData.g.cs` の表およびリポジトリで公開している `data/MJUniqueAlternatives.1.2.0.csv` には、以下の外部データに由来する内容が含まれます。これらのデータにはプログラムコードの MIT License ではなく、各出典元の条件が適用されます。
+`GeneratedData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs` の表およびリポジトリで公開している `data/MJUniqueAlternatives.1.2.0.csv` には、以下の外部データに由来する内容が含まれます。これらのデータにはプログラムコードの MIT License ではなく、各出典元の条件が適用されます。
 
 - MJ文字情報一覧表およびMJ縮退マップ: 独立行政法人情報処理推進機構（IPA）提供。CC BY-SA 2.1 JP。ライセンス本文と条件は <https://creativecommons.org/licenses/by-sa/2.1/jp/> を参照してください。改変・再構成したデータを再配布する場合は、同ライセンスの表示および継承条件に従ってください。
 - Unicode IVD および Unicode Standardized Variants: Unicode, Inc. 提供。Unicode の利用条件 <https://www.unicode.org/terms_of_use.html> に従ってください。
