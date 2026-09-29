@@ -1,6 +1,6 @@
 # KanjiVariants
 
-MJ縮退マップに基づく漢字代替候補の検索・置換、常用漢字表の音訓索引、学年別漢字配当表を参照できる .NET 6 ライブラリです。JIS X 0208 / JIS X 0213 の文字集合を対象にできます。
+MJ縮退マップに基づく漢字代替候補の検索・置換、常用漢字表の音訓索引と学校段階別割り振り、学年別漢字配当表を参照できる .NET 6 ライブラリです。JIS X 0208 / JIS X 0213 の文字集合を対象にできます。
 
 異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
 
@@ -122,6 +122,25 @@ var firstGrade = EducationKanji.GetByGrade(KanjiGrade.Grade1); // 80字
 
 配当表の文字そのものだけを判定します。旧字体、異体字、IVS/SVS付きの表現は対象外です。`EducationKanji` は `JoyoKanji` や異体字変換と自動的に結合しません。変換が必要な場合は、利用者側で `Kanji.TryGetAlternative(...)` などと明示的に組み合わせてください。
 
+## 常用漢字の音訓と学校段階
+
+`JoyoKanjiEducation` は、文部科学省「音訓の小・中・高等学校段階別割り振り表（平成29年3月）」に基づき、常用漢字の音訓ごとの指導段階を `Elementary`・`JuniorHigh`・`HighSchool` で返します。各音訓の `Reading` は既存の `JoyoKanji` の `KanjiReading` と同じインスタンスです。同じ漢字でも読みごとに段階が異なり、漢字単位の小学校配当学年は `EducationKanji.GetGrade()` で別に調べます。この割り振りは指導の目安であり、学校での取扱いを制限するものではありません。
+
+```csharp
+var stage = JoyoKanjiEducation.GetReadingStage("衣", "ころも"); // JuniorHigh
+var highSchool = JoyoKanjiEducation.GetReadingStage("悪", "オ"); // HighSchool
+var readings = JoyoKanjiEducation.GetReadings("宮");
+```
+
+`IsSpecialOrLimited` は、原典で1字下げされ、「特別なもの、又は用法のごく狭いもの」とされる音訓を示します。本表字だけを対象とし、旧字体・異体字・IVS/SVSを自動変換しません。
+
+付表1の語と付表2の都道府県名の読みは、`JoyoKanjiAppendix` から語単位で参照できます。異表記は一つの `Words` にまとめています。
+
+```csharp
+var ama = JoyoKanjiAppendix.FindByWord("海女")[0]; // Words: 海女、海士
+var kagura = JoyoKanjiAppendix.FindByReading("かぐら");
+```
+
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
@@ -131,8 +150,14 @@ var firstGrade = EducationKanji.GetByGrade(KanjiGrade.Grade1); // 80字
 | `Kanji.IsSupported` | 漢字表現そのものが指定された `CharacterSet` に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
 | `KanjiText.IsSupported` | 文字列全体を指定された `CharacterSet` で検証 | 任意の文字列 |
+| `JoyoKanji` | 常用漢字表の本表字、旧字体等、音訓、語例、備考を参照 | 常用漢字表の本表字一文字 |
+| `EducationKanji` | 小学校の学年別漢字配当表を参照し、配当学年を取得 | 配当表に掲載された漢字一文字 |
+| `JoyoKanjiEducation` | 常用漢字の各音訓について、小学校・中学校・高等学校の指導段階を参照 | 常用漢字表の本表字一文字 |
+| `JoyoKanjiAppendix` | 常用漢字表の付表語や都道府県名の特別な読みを、語単位で検索 | 語または読み |
 
 `GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表を優先した結果です。候補一覧が1件でも、それだけで一意な変換先とは判断しません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
+
+常用漢字関連では、`JoyoKanji` が漢字と音訓そのもの、`EducationKanji` が小学校での漢字単位の配当学年、`JoyoKanjiEducation` が音訓単位の学校段階、`JoyoKanjiAppendix` が付表語・都道府県名の読みを担当します。
 
 ## 一意な変換先の一覧
 
@@ -174,6 +199,8 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 
 性能計測は別プロジェクトで実行します。`dotnet run --project KanjiVariants.Benchmarks/KanjiVariants.Benchmarks.csproj -c Release -- --filter "*"` はBenchmarkDotNetを復元し、検索・置換とメモリ割り当てを計測します。
 
+音訓別の学校段階と付表は、固定した `data/JoyoKanjiSchoolStages2017.pdf` から `python tools/generate_joyo_education.py` で再生成できます。座標付きPDF文字抽出に `pdfplumber` が必要です。OCRは使用しません。`--check` で生成済みファイルとの一致を確認できます。原PDFのテキスト層で「𠮟」だけが欠落するため、Generatorは該当行の位置・音訓と既存 `JoyoKanji` を検証してから補正します。
+
 ## データと出典
 
 生成元データを `data/` に固定し、実行時には生成済みデータを使います。JIS X 0213の所属情報は、MJ文字情報一覧表 Ver.006.02の「実装したUCS」と「X0213」に基づいています。
@@ -187,6 +214,7 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 | JIS X 0208 の Unicode 対応 | Pythonの `euc_jp` デコーダーで区点1–94を走査して生成。Windows CP932の拡張文字は含めない。 |
 | 常用漢字表の音訓索引 | [文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)。公開HTMLを固定し、本表の文字・音訓・語例・備考をKanjiVariants用に抽出・再構成。 |
 | 学年別漢字配当表 | [文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)。公式PDFを固定し、画像表を転記して検索表へ加工。各学年80・160・200・202・193・191字。 |
+| 音訓の小・中・高等学校段階別割り振り表 | 文部科学省、平成29年3月。[案内ページ](https://www.mext.go.jp/a_menu/shotou/new-cs/1385768.htm)・[原典PDF](https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2017/05/15/1385768.pdf)。固定PDFの文字と座標から本表の音訓別段階・1字下げ、付表1・付表2を抽出。 |
 
 ### 学年別漢字配当表の照合結果
 
