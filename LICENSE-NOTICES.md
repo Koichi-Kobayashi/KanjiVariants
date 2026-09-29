@@ -4,7 +4,7 @@
 
 ## プログラムコード
 
-KanjiVariants のプログラムコード（`GeneratedData.g.cs` と `GeneratedJoyoKanjiData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
+KanjiVariants のプログラムコード（`GeneratedData.g.cs`、`GeneratedJoyoKanjiData.g.cs`、`GeneratedEducationKanjiData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
 
 MIT License の本文は以下のとおりです。
 
@@ -45,3 +45,5 @@ SOFTWARE.
 各データのバージョン、生成元および詳細は同梱の `README.md` を参照してください。
 
 `data/JoyoKanjiOnkunIndex.html` と `GeneratedJoyoKanjiData.g.cs` の文字・音訓・語例・備考は、[文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)を元にしています。原典HTMLを固定保存し、表の行・音訓・語例を抽出、空行や改行による続き行を整理して、KanjiVariants用の検索表に加工しています。備考は原文の字単位の情報として保持します。文化庁サイトに適用される[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
+
+`data/EducationKanjiGradeTable.pdf`、その転記 `data/EducationKanjiGradeTable.txt`、`GeneratedEducationKanjiData.g.cs` の文字と学年は、[文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)を元にしています。画像の表を転記し、掲載順を保持した学年別一覧とUnicode順の検索表に加工しています。[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。

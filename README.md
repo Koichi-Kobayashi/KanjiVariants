@@ -1,6 +1,6 @@
 # KanjiVariants
 
-MJ縮退マップに基づく漢字代替候補の検索・置換と、文化庁の常用漢字表の音訓索引の参照ができる .NET 6 ライブラリです。JIS X 0208 / JIS X 0213 の文字集合を対象にできます。
+MJ縮退マップに基づく漢字代替候補の検索・置換、常用漢字表の音訓索引、学年別漢字配当表を参照できる .NET 6 ライブラリです。JIS X 0208 / JIS X 0213 の文字集合を対象にできます。
 
 異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
 
@@ -110,6 +110,18 @@ var onOnly = JoyoKanji.FindByReading("こう", KanjiReadingType.On);
 
 `OldForm` は併記が1字のときだけ設定されます。「弁」のように複数ある場合は `OldForm == null` で、すべての候補を `OldForms` から参照できます。角括弧による字形注記を含む原典の文字欄は `SourceLabel` に保持します。備考欄は字単位の情報なので、各 `KanjiReading.Note` に同じ原文を入れています。どの音訓だけに適用されるかは推定していません。
 
+## 学年別漢字配当表（教育漢字）
+
+`EducationKanji` は、平成29年告示の小学校学習指導要領に掲載された配当漢字1,026字を、学年別に参照します。`GetByGrade()` は転記データの順で、共有の読み取り専用一覧を返します。
+
+```csharp
+bool isEducationKanji = EducationKanji.IsEducationKanji("学"); // true
+KanjiGrade? grade = EducationKanji.GetGrade("学");          // Grade1
+var firstGrade = EducationKanji.GetByGrade(KanjiGrade.Grade1); // 80字
+```
+
+配当表の文字そのものだけを判定します。旧字体、異体字、IVS/SVS付きの表現は対象外です。`EducationKanji` は `JoyoKanji` や異体字変換と自動的に結合しません。変換が必要な場合は、利用者側で `Kanji.TryGetAlternative(...)` などと明示的に組み合わせてください。
+
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
@@ -158,6 +170,8 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 
 ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。MJ等の生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。常用漢字データは固定した `data/JoyoKanjiOnkunIndex.html` から `python tools/generate_joyo.py` で再生成できます。原典の取得を更新する場合だけ `python tools/fetch_joyo.py` を明示的に実行します。実行時のネットワーク接続は不要です。
 
+教育漢字データは `python tools/generate_education_kanji.py` で再生成し、`--check` で生成済みファイルとの一致を確認できます。平成29年告示版の原典PDFは画像の表なので、その転記を `data/EducationKanjiGradeTable.txt` に固定しています。Generatorは固定PDFのSHA-256と転記の件数・重複を検証します。原典の更新取得は `python tools/fetch_education_kanji.py` で明示的に行い、PDFが変わった場合は転記を再照合してください。
+
 性能計測は別プロジェクトで実行します。`dotnet run --project KanjiVariants.Benchmarks/KanjiVariants.Benchmarks.csproj -c Release -- --filter "*"` はBenchmarkDotNetを復元し、検索・置換とメモリ割り当てを計測します。
 
 ## データと出典
@@ -172,6 +186,26 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 | Unicode Standardized Variants | Unicode 18.0.0、[Unicode Character Database](https://www.unicode.org/Public/18.0.0/ucd/StandardizedVariants.txt) |
 | JIS X 0208 の Unicode 対応 | Pythonの `euc_jp` デコーダーで区点1–94を走査して生成。Windows CP932の拡張文字は含めない。 |
 | 常用漢字表の音訓索引 | [文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)。公開HTMLを固定し、本表の文字・音訓・語例・備考をKanjiVariants用に抽出・再構成。 |
+| 学年別漢字配当表 | [文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)。公式PDFを固定し、画像表を転記して検索表へ加工。各学年80・160・200・202・193・191字。 |
+
+### 学年別漢字配当表の照合結果
+
+2026-09-29に、`data/EducationKanjiGradeTable.txt` の**収録文字と所属学年**を、文部科学省の公開資料から独立に再構成して照合しました。照合対象の平成29年版PDFのSHA-256は `6AF90F134B243E44F9767C37EE3079FAC092883FD6359B836A5733DD25B43902` で、TXTに記録した値と一致しています。
+
+1. [平成10年12月告示・平成15年12月一部改正の配当表](https://www.mext.go.jp/a_menu/shotou/cs/1320015.htm)から、HTMLの表を直接読み取り、旧版の1006字を学年別に取得しました。
+2. [平成20年3月告示の小学校学習指導要領](https://www.mext.go.jp/component/a_menu/education/micro_detail/__icsFiles/afieldfile/2010/11/29/syo.pdf)と、[平成27年3月一部改正後の同指導要領](https://www.mext.go.jp/a_menu/shotou/new-cs/youryou/__icsFiles/afieldfile/2015/03/26/1356250_1.pdf)の配当表を比較しました。後者はPDFのテキストレイヤーから直接抽出でき、平成10年版HTMLと全6学年で文字集合・掲載順が一致しました。平成20年告示当初のPDFもWeb上の可読テキストでは一致しましたが、そのWeb側の抽出方式は確認できていません。
+3. [平成29年告示の解説・国語編](https://www.mext.go.jp/content/20220606-mxt_kyoiku02-100002607_002.pdf)のPDFテキストレイヤーから、新規追加20字と既存字の学年移動を取得しました。追加20字の一覧は、[移行措置の概要](https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2019/01/16/1387780_005_003_1.pdf)のテキストレイヤーとも一致しました。[国語に関するQ&A](https://www.mext.go.jp/content/1422304_001.pdf)も、20字の追加と32字の負担調整を説明しています。
+4. 旧版の各学年に公式資料の変更を適用して1026字を再構成し、TXTと学年別の集合を機械比較しました。
+
+| 対象 | 第1学年 | 第2学年 | 第3学年 | 第4学年 | 第5学年 | 第6学年 | 合計 | ユニーク | 重複 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 旧版HTML | 80 | 160 | 200 | 200 | 185 | 181 | 1006 | 1006 | 0 |
+| 再構成した平成29年版 | 80 | 160 | 200 | 202 | 193 | 191 | 1026 | 1026 | 0 |
+| `EducationKanjiGradeTable.txt` | 80 | 160 | 200 | 202 | 193 | 191 | 1026 | 1026 | 0 |
+
+新旧の全体集合の差は、公式解説にある新規追加20字（茨・媛・岡・潟・岐・熊・香・佐・埼・崎・滋・鹿・縄・井・沖・栃・奈・梨・阪・阜）のみで、旧版から削除された字はありません。既存字の学年変更は、都道府県名への対応で第4学年へ移した5字と、負担調整で移行した32字の計37字です。移動の内訳は5→4が4字、6→4が1字、4→5が21字、4→6が2字、5→6が9字で、公式解説と一致しました。再構成版に対するTXTの不足・余分・学年違い・重複はいずれも**0字**でした。
+
+この照合では1026字全体をOCRして作り直していません。今回、旧版HTMLとPDFテキストレイヤーから取得できる情報の検証にOCRは使用していません。平成29年版PDFに対するTXTの**掲載順の一字単位の完全一致は未検証**です。`GetByGrade()` の列挙順はTXTの転記順であり、利用時に原典の掲載順との厳密な一致を前提にしないでください。
 
 ### 日本語IVSの閲覧用一覧
 
