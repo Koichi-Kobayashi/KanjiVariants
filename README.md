@@ -110,6 +110,19 @@ var onOnly = JoyoKanji.FindByReading("こう", KanjiReadingType.On);
 
 `OldForm` は併記が1字のときだけ設定されます。「弁」のように複数ある場合は `OldForm == null` で、すべての候補を `OldForms` から参照できます。角括弧による字形注記を含む原典の文字欄は `SourceLabel` に保持します。備考欄は字単位の情報なので、各 `KanjiReading.Note` に同じ原文を入れています。どの音訓だけに適用されるかは推定していません。
 
+## 表外読み
+
+`JoyoReading` は、既存の常用漢字表の音訓データを使って、漢字と読みの組み合わせの掲載有無を判定します。`IsListedReading()` は本表字と掲載音訓の組み合わせなら `true`、`IsHyogaiReading()` は漢字が本表字であり、その読みが掲載音訓に含まれなければ `true` です。漢字自体が非常用漢字の場合は、どちらも `false` になります。
+
+```csharp
+bool listed = JoyoReading.IsListedReading("高", "こう");       // true（掲載音訓は「コウ」）
+bool hyogai = JoyoReading.IsHyogaiReading("愛", "いとしい"); // true（掲載音訓は「アイ」）
+```
+
+表外読みは「常用漢字表に掲載されていない読み」を示すだけで、その読みが誤りであることを意味しません。入力が実際に使われる読みかどうかも判定しません。比較には `JoyoKanji.IsReadingSupported()` を再利用し、NFC正規化後にカタカナU+30A1～U+30F6をひらがなへ変換して完全一致で調べます。長音記号の展開、活用形の展開、送り仮名補正、部分一致、読みの類推は行いません。
+
+旧字体・異体字・IVS/SVS付き表現は対象外で、自動変換や基底文字へのフォールバックは行いません。characterがnull・空・複数文字・非漢字の場合は `false`、readingがnullなら文字が対象外でも `ArgumentNullException` です。空のreadingは未掲載として扱うため、本表字では `IsListedReading()` が `false`、`IsHyogaiReading()` が `true` になります。必要な異体字変換や読みの入力検証は、利用者側で明示的に組み合わせてください。
+
 ## 人名用漢字
 
 `JinmeiyoKanji` は、MJ文字情報一覧表で「漢字施策 = 人名用漢字」とされた863字の「実装したUCS」を参照します。`IsJinmeiyoKanji` はその863字だけを判定します。`IsNameUsableKanji` は、常用漢字の本表字または人名用漢字に含まれる漢字を判定します。ひらがな・カタカナなど、名前に使える漢字以外の文字を判定するAPIではありません。
@@ -183,6 +196,7 @@ var appendix = Okurigana.GetByKind(OkuriganaRuleKind.Appendix);
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
 | `KanjiText.IsSupported` | 文字列全体を指定された `CharacterSet` で検証 | 任意の文字列 |
 | `JoyoKanji` | 常用漢字表の本表字、旧字体等、音訓、語例、備考を参照 | 常用漢字表の本表字一文字 |
+| `JoyoReading` | 本表字と読みの組み合わせが常用漢字表に掲載されているか、表外読みかを判定 | 本表字一文字と読み。読みの正誤判定はしない |
 | `JinmeiyoKanji` | 人名用漢字863字の判定と、常用漢字を含めた名前に使用可能な漢字の判定 | 漢字一文字。IVS/SVS付き表現は対象外 |
 | `EducationKanji` | 小学校の学年別漢字配当表を参照し、配当学年を取得 | 配当表に掲載された漢字一文字 |
 | `JoyoKanjiEducation` | 常用漢字の各音訓について、小学校・中学校・高等学校の指導段階を参照 | 常用漢字表の本表字一文字 |
