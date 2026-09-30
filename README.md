@@ -186,6 +186,26 @@ var appendix = Okurigana.GetByKind(OkuriganaRuleKind.Appendix);
 
 固定HTMLからの掲載項目数は483件です。同一語の別項目を含み、許容表記は同じ項目にまとめています。通則1～7は順に71・67・30・73・29・112・86件、付表は15件です。区分別では本則208・例外200・許容60・付表15件で、63項目に計72件の `AlternativeForms` があります。常用漢字・人名用漢字の判定や異体字変換とは独立した機能です。
 
+## MJ文字情報
+
+`MjCharacter` は、固定した `data/mji.00602.xlsx`（MJ文字情報一覧表 Ver.006.02）のMJ文字図形名・Unicode表現・漢字施策・X0213情報を参照します。文字図形名から一意に取得でき、Unicode表現からの検索では複数の関連MJ文字が返る場合があります。
+
+```csharp
+var entry = MjCharacter.GetByMjGlyphName("MJ028902"); // 実装したUCS: U+9AD9（髙）
+
+foreach (var match in MjCharacter.Find("髙"))
+{
+    Console.WriteLine(match.Entry.MjGlyphName);
+    Console.WriteLine(match.MatchKind);
+}
+```
+
+「対応するUCS」と「実装したUCS」、IVS、SVS、「対応する互換漢字」はそれぞれ別の情報として保持します。`Ivs` と `Svs` は `IReadOnlyList<KanjiCharacter>` で、複数のシーケンスを原典順にすべて保持し、空欄は共有の空一覧を返します。検索インデックスには一覧内の全シーケンスを登録します。`MatchKind` は検索の一致理由を示し、同じMJ文字が複数の理由で一致した場合はビットORでまとめた1件を返します。IVS/SVSを検索しても基底文字へ自動縮退しません。結果一覧は共有の読み取り専用です。
+
+`KanjiPolicy` は原典の「常用漢字」「人名用漢字」を表し、空欄は `null` です。既存の `JoyoKanji` / `JinmeiyoKanji` の判定とは独立しています。`JisX0213` はX0213列の原典値（例: `1-25-66`）をそのまま返し、`CharacterSet` の判定とは自動結合しません。`Find(string)` は々・〆・〻も含むUnicodeスカラー一文字を受け付け、VS付き表現には既存の登録済みIVS/SVS解析を使用します。無効な入力や該当なしは空の一覧、null入力は `ArgumentNullException` です。文字図形名の検索は大文字小文字を区別する完全一致で、該当なしは `null` です。
+
+収録件数はMJ文字58,862件（文字図形名も58,862件）、対応UCS58,859件、実装UCS52,607件、IVS欄11,382件（シーケンス11,384件）、SVS欄89件（シーケンス89件）、漢字施策2,999件（常用2,136・人名用863）、互換漢字101件、X0213欄13,707件です。`MJ059399` と `MJ059400` はIVSを2件ずつ保持します。現行データに複数SVSの行はありませんが、SVSも複数値を扱う同じ処理を使用します。漢字施策を持つ全行の実装UCSは、既存の常用漢字・人名用漢字集合と一致することを検証しています。
+
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
@@ -195,6 +215,7 @@ var appendix = Okurigana.GetByKind(OkuriganaRuleKind.Appendix);
 | `Kanji.IsSupported` | 漢字表現そのものが指定された `CharacterSet` に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
 | `KanjiText.IsSupported` | 文字列全体を指定された `CharacterSet` で検証 | 任意の文字列 |
+| `MjCharacter` | MJ文字図形名・Unicode・IVS/SVS・JIS X 0213・漢字施策等のMJ文字情報を参照 | MJ文字図形名、Unicodeスカラー一文字、または登録済みIVS/SVS |
 | `JoyoKanji` | 常用漢字表の本表字、旧字体等、音訓、語例、備考を参照 | 常用漢字表の本表字一文字 |
 | `JoyoReading` | 本表字と読みの組み合わせが常用漢字表に掲載されているか、表外読みかを判定 | 本表字一文字と読み。読みの正誤判定はしない |
 | `JinmeiyoKanji` | 人名用漢字863字の判定と、常用漢字を含めた名前に使用可能な漢字の判定 | 漢字一文字。IVS/SVS付き表現は対象外 |
@@ -243,6 +264,8 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 ```
 
 ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。MJ等の生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。常用漢字データは固定した `data/JoyoKanjiOnkunIndex.html` から `python tools/generate_joyo.py` で再生成できます。原典の取得を更新する場合だけ `python tools/fetch_joyo.py` を明示的に実行します。実行時のネットワーク接続は不要です。
+
+MJ文字情報API用データは固定した `data/mji.00602.xlsx` から `python tools/generate_mj_character.py` で再生成し、`python tools/generate_mj_character.py --check` で生成済みデータとの一致を確認できます。実行時にExcelやネットワーク接続は必要ありません。
 
 人名用漢字データは固定した `data/mji.00602.xlsx` から `python tools/generate_jinmeiyo.py` で再生成し、`python tools/generate_jinmeiyo.py --check` で生成結果との一致を確認できます。
 
