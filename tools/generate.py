@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'data'
-OUT = ROOT / 'KanjiVariants' / 'GeneratedData.g.cs'
+OUT = ROOT / 'KanjiVariants' / 'Generated' / 'GeneratedData.g.cs'
 UNIQUE_CSV = DATA / 'MJUniqueAlternatives.1.2.0.csv'
 NS = '{http://purl.oclc.org/ooxml/spreadsheetml/main}'
 JIS_X_0208 = 1 << 0

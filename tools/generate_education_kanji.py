@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE_URL = "https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf"
 SOURCE_PDF = ROOT / "data" / "EducationKanjiGradeTable.pdf"
 TRANSCRIPTION = ROOT / "data" / "EducationKanjiGradeTable.txt"
-OUTPUT = ROOT / "KanjiVariants" / "GeneratedEducationKanjiData.g.cs"
+OUTPUT = ROOT / "KanjiVariants" / "Generated" / "GeneratedEducationKanjiData.g.cs"
 SOURCE_SHA256 = "6af90f134b243e44f9767c37ee3079fac092883fd6359b836a5733dd25b43902"
 EXPECTED = {1: 80, 2: 160, 3: 200, 4: 202, 5: 193, 6: 191}
 

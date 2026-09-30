@@ -26,7 +26,7 @@ from generate_education_kanji import (OUTPUT as EDUCATION_OUTPUT,
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "data" / "JoyoKanjiSchoolStages2017.pdf"
-OUTPUT = ROOT / "KanjiVariants" / "GeneratedJoyoKanjiEducationData.g.cs"
+OUTPUT = ROOT / "KanjiVariants" / "Generated" / "GeneratedJoyoKanjiEducationData.g.cs"
 SOURCE_URL = "https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2017/05/15/1385768.pdf"
 SOURCE_SHA256 = "0bc189982a50122f1e35dd6a751bfdff0ec5a0ad67e99eda916d012f859a5ae4"
 MAIN_BASES = (70.6, 310.8, 551.0)

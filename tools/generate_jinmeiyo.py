@@ -13,7 +13,7 @@ from generate import mj_rows
 
 
 ROOT = Path(__file__).resolve().parent.parent
-OUTPUT = ROOT / "KanjiVariants" / "GeneratedJinmeiyoKanjiData.g.cs"
+OUTPUT = ROOT / "KanjiVariants" / "Generated" / "GeneratedJinmeiyoKanjiData.g.cs"
 EXPECTED_COUNT = 863
 UCS_PATTERN = re.compile(r"U\+[0-9A-Fa-f]{4,6}\Z")
 

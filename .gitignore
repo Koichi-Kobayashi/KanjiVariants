@@ -37,6 +37,7 @@ BenchmarkDotNet.Artifacts/
 
 # Generated files
 Generated/
+!/KanjiVariants/Generated/
 *.generated.cs
 
 # OS

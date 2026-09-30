@@ -15,7 +15,7 @@ import re
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "data" / "JoyoKanjiOnkunIndex.html"
-OUTPUT = ROOT / "KanjiVariants" / "GeneratedJoyoKanjiData.g.cs"
+OUTPUT = ROOT / "KanjiVariants" / "Generated" / "GeneratedJoyoKanjiData.g.cs"
 SOURCE_URL = "https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html"
 
 
