@@ -1,0 +1,2 @@
+# 固定した公式HTMLの文字コード・改行を保持し、原典のSHA-256検証を可能にします。
+/data/Okurigana/*.html -text

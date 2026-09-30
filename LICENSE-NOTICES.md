@@ -4,7 +4,7 @@
 
 ## プログラムコード
 
-KanjiVariants のプログラムコード（`GeneratedData.g.cs`、`GeneratedJoyoKanjiData.g.cs`、`GeneratedEducationKanjiData.g.cs`、`GeneratedJoyoKanjiEducationData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
+KanjiVariants のプログラムコード（`GeneratedData.g.cs`、`GeneratedJoyoKanjiData.g.cs`、`GeneratedEducationKanjiData.g.cs`、`GeneratedJoyoKanjiEducationData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedOkuriganaData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
 
 MIT License の本文は以下のとおりです。
 
@@ -49,3 +49,5 @@ SOFTWARE.
 `data/EducationKanjiGradeTable.pdf`、その転記 `data/EducationKanjiGradeTable.txt`、`GeneratedEducationKanjiData.g.cs` の文字と学年は、[文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)をもとに、KanjiVariants用に加工して作成しています。画像の表を転記し、掲載順を保持した学年別一覧とUnicode順の検索表に加工しています。[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
 
 `data/JoyoKanjiSchoolStages2017.pdf` と `GeneratedJoyoKanjiEducationData.g.cs` の音訓別学校段階、1字下げ情報、付表1・付表2の語は、[文部科学省「音訓の小・中・高等学校段階別割り振り表（平成29年3月）」](https://www.mext.go.jp/a_menu/shotou/new-cs/1385768.htm)の[原典PDF](https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2017/05/15/1385768.pdf)をもとに、KanjiVariants用に加工して作成しています。固定PDFの文字と座標を抽出し、既存の常用漢字・学年データと照合して検索表へ再構成しています。[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
+
+`data/Okurigana/` の公式HTMLと `GeneratedOkuriganaData.g.cs` の掲載語・許容表記・注記は、[文化庁「送り仮名の付け方」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html)をもとに、KanjiVariants用に加工・再構成しています。通則1～7と付表のHTMLを固定保存し、本文の見出しと語例を解析して本則・例外・許容・付表別の検索データへ整理しています。読み・構成関係・《　》の原典表記等は注記に分離しています。文化庁サイトに適用される[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。

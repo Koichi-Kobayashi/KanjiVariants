@@ -153,6 +153,26 @@ var ama = JoyoKanjiAppendix.FindByWord("海女")[0]; // Words: 海女、海士
 var kagura = JoyoKanjiAppendix.FindByReading("かぐら");
 ```
 
+## 送り仮名
+
+`Okurigana` は、[文化庁「送り仮名の付け方」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html)の通則1～7と付表に掲載された語を参照します。本則・例外・許容・付表を `OkuriganaRuleKind` で区別します。この機能は公式掲載語の参照に限定され、任意の日本語について送り仮名の正誤を自動判定するものではありません。未掲載語への規則適用、活用形の自動展開、形態素解析は行いません。
+
+```csharp
+var entries = Okurigana.Find("行う");
+var alternative = Okurigana.Find("行なう"); // 同じ掲載項目を参照
+var rule1 = Okurigana.GetByRule(1);
+var permitted = Okurigana.GetByKind(OkuriganaRuleKind.Permitted);
+var appendix = Okurigana.GetByKind(OkuriganaRuleKind.Appendix);
+```
+
+`Find()` は `Word` と `AlternativeForms` をNFC正規化後に完全一致で検索します。仮名の種類、前後の空白、活用形を同一視しません。該当なしは空一覧、nullは `ArgumentNullException` です。`GetByRule()` は1～7、不正な通則番号やenum値は `ArgumentOutOfRangeException` です。返される一覧と許容表記の一覧は、共有の読み取り専用一覧です。
+
+`Word` は掲載語の本体、`AlternativeForms` は同じ項目の許容表記です。読みの括弧や語の構成関係は `Note` に保持し、代替表記として扱いません。通則2の許容欄では、原典が角括弧で示した表記を許容表記として扱います。同じ語が複数の通則や区分に掲載されている場合は、それぞれの項目を返します。「脅かす」のように同じ表記でも読み注記が異なる場合も保持します。
+
+注意中の本則に関する語例は `Principle` として注記付きで収録します。`RuleNumber` は掲載箇所の番号であり、例えば通則2の注意に掲載された語は番号2と、その注意に記載された「通則1による」という説明を保持します。通則7は公式の[「本文」の見方及び使い方](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/mikata.html)に従い、`Exception` として番号7を保持します。`《博多》織` などは `Word = "博多織"` とし、原典の《　》表記と説明を `Note` に残します。類推による語の追加は行いません。付表は `RuleNumber = null`、`Kind = Appendix` とし、送り仮名を付ける／付けない区分や許容条件は `Note` に保持します。
+
+固定HTMLからの掲載項目数は483件です。同一語の別項目を含み、許容表記は同じ項目にまとめています。通則1～7は順に71・67・30・73・29・112・86件、付表は15件です。区分別では本則208・例外200・許容60・付表15件で、63項目に計72件の `AlternativeForms` があります。常用漢字・人名用漢字の判定や異体字変換とは独立した機能です。
+
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
@@ -167,6 +187,7 @@ var kagura = JoyoKanjiAppendix.FindByReading("かぐら");
 | `EducationKanji` | 小学校の学年別漢字配当表を参照し、配当学年を取得 | 配当表に掲載された漢字一文字 |
 | `JoyoKanjiEducation` | 常用漢字の各音訓について、小学校・中学校・高等学校の指導段階を参照 | 常用漢字表の本表字一文字 |
 | `JoyoKanjiAppendix` | 常用漢字表の付表語や都道府県名の特別な読みを、語単位で検索 | 語または読み |
+| `Okurigana` | 文化庁「送り仮名の付け方」の公式掲載語・本則・例外・許容・付表を参照 | 公式掲載語または同じ項目の許容表記。未掲載語の正誤判定はしない |
 
 `GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表を優先した結果です。候補一覧が1件でも、それだけで一意な変換先とは判断しません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
 
@@ -211,6 +232,8 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 
 人名用漢字データは固定した `data/mji.00602.xlsx` から `python tools/generate_jinmeiyo.py` で再生成し、`python tools/generate_jinmeiyo.py --check` で生成結果との一致を確認できます。
 
+送り仮名データは `data/Okurigana/` に固定した文化庁公式HTML（`rule1.html`～`rule7.html`、`appendix.html`）から `python tools/generate_okurigana.py` で再生成し、`python tools/generate_okurigana.py --check` で生成済みファイルとの一致を確認できます。原典HTMLの更新取得は `python tools/fetch_okurigana.py` を明示的に実行します。通常の生成・ビルド・テストで取得処理は実行しません。Generatorは固定HTMLのSHA-256、見出し、語例ブロック数、通則別・区分別件数を検証し、変化があれば停止します。原典更新後は解析方法と掲載語を再照合してください。
+
 教育漢字データは `python tools/generate_education_kanji.py` で再生成し、`--check` で生成済みファイルとの一致を確認できます。平成29年告示版の原典PDFは画像の表なので、その転記を `data/EducationKanjiGradeTable.txt` に固定しています。Generatorは固定PDFのSHA-256と転記の件数・重複を検証します。原典の更新取得は `python tools/fetch_education_kanji.py` で明示的に行い、PDFが変わった場合は転記を再照合してください。
 
 性能計測は別プロジェクトで実行します。`dotnet run --project KanjiVariants.Benchmarks/KanjiVariants.Benchmarks.csproj -c Release -- --filter "*"` はBenchmarkDotNetを復元し、検索・置換とメモリ割り当てを計測します。
@@ -231,6 +254,7 @@ dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 | 常用漢字表の音訓索引 | [文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)。公開HTMLを固定し、本表の文字・音訓・語例・備考をKanjiVariants用に抽出・再構成。 |
 | 学年別漢字配当表 | [文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)。公式PDFを固定し、画像表を転記して検索表へ加工。各学年80・160・200・202・193・191字。 |
 | 音訓の小・中・高等学校段階別割り振り表 | 文部科学省、平成29年3月。[案内ページ](https://www.mext.go.jp/a_menu/shotou/new-cs/1385768.htm)・[原典PDF](https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2017/05/15/1385768.pdf)。固定PDFの文字と座標から本表の音訓別段階・1字下げ、付表1・付表2を抽出。 |
+| 送り仮名の付け方 | [文化庁の公式本文](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html)。2026-09-30取得の通則1～7（`honbun01.html`～`honbun07.html`）と付表（`huhyo.html`）を固定し、掲載語、許容表記、注記を抽出・再構成。各ページの取得元URLは `tools/fetch_okurigana.py` に記載。 |
 
 ### 学年別漢字配当表の照合結果
 
