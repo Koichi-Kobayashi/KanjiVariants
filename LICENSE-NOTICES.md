@@ -42,7 +42,7 @@ SOFTWARE.
 - Unicode IVD および Unicode Standardized Variants: Unicode, Inc. 提供。Unicode の利用条件 <https://www.unicode.org/terms_of_use.html> に従ってください。
 - JIS X 0208 対応表: Python の `euc_jp` デコーダーによる区点走査から生成しています。Python の文字コード実装および Unicode データに関する条件は、使用した Python ディストリビューションのライセンス・通知も確認してください。
 
-各データのバージョン、生成元および詳細は同梱の `README.md` を参照してください。
+各データのバージョン、生成元および詳細は同梱の [README.md](README.md) を参照してください。
 
 `data/JoyoKanjiOnkunIndex.html` と `GeneratedJoyoKanjiData.g.cs` の文字・音訓・語例・備考は、[文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)をもとに、KanjiVariants用に加工して作成しています。原典HTMLを固定保存し、表の行・音訓・語例を抽出、空行や改行による続き行を整理して、KanjiVariants用の検索表に加工しています。備考は原文の字単位の情報として保持します。文化庁サイトに適用される[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
 
