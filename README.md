@@ -277,6 +277,17 @@ MJ文字情報API用データは固定した `data/mji.00602.xlsx` から `pytho
 
 音訓別の学校段階と付表は、固定した `data/JoyoKanjiSchoolStages2017.pdf` から `python tools/generate_joyo_education.py` で再生成できます。座標付きPDF文字抽出に `pdfplumber` が必要です。OCRは使用しません。`--check` で生成済みファイルとの一致を確認できます。原PDFのテキスト層で「𠮟」だけが欠落するため、Generatorは該当行の位置・音訓と既存 `JoyoKanji` を検証してから補正します。
 
+## APIドキュメント
+
+DocfxのLocal Toolで、XMLコメントからAPIリファレンスと利用ガイドを生成できます。
+
+```powershell
+dotnet tool restore
+dotnet docfx docs/docfx.json
+```
+
+HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port 8080` でローカル閲覧できます。詳細は[生成・閲覧方法](docs/articles/building-docs.md)、入口は[ドキュメントトップ](docs/index.md)を参照してください。
+
 ## データと出典
 
 生成元データを `data/` に固定し、実行時には生成済みデータを使います。JIS X 0213の所属情報は、MJ文字情報一覧表 Ver.006.02の「実装したUCS」と「X0213」に基づいています。

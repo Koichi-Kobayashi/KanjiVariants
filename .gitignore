@@ -68,3 +68,8 @@ __pycache__/
 .venv/
 venv/
 env/
+
+# Docfx generated API metadata and HTML
+/docs/_site/
+/docs/api/*.yml
+/docs/api/.manifest

@@ -1,0 +1,20 @@
+- name: Getting Started
+  href: getting-started.md
+- name: 文字集合
+  href: character-sets.md
+- name: 常用漢字
+  href: joyo-kanji.md
+- name: 教育漢字
+  href: education-kanji.md
+- name: 人名用漢字
+  href: jinmeiyo-kanji.md
+- name: 学校段階・付表
+  href: school-stages.md
+- name: 表外読み
+  href: joyo-reading.md
+- name: 送り仮名
+  href: okurigana.md
+- name: MJ文字情報
+  href: mj-character.md
+- name: 生成・閲覧方法
+  href: building-docs.md
