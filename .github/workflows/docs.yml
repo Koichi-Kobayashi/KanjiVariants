@@ -1,0 +1,110 @@
+name: Publish documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'KanjiVariants/**'
+      - 'KanjiVariants.Tests/**'
+      - 'docs/**'
+      - '.config/dotnet-tools.json'
+      - 'Directory.Build.props'
+      - 'KanjiVariants.slnx'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.0.0
+        with:
+          # .slnxとDocfx用のSDK、およびnet8.0テストのランタイムを用意します。
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Configure Pages
+        uses: actions/configure-pages@v6.0.0
+      - name: Restore local tools
+        run: dotnet tool restore
+      - name: Restore solution
+        run: dotnet restore KanjiVariants.slnx
+      - name: Build
+        run: dotnet build KanjiVariants.slnx -c Release --no-restore
+      - name: Test
+        run: dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release --no-build
+      - name: Generate documentation
+        run: dotnet docfx docs/docfx.json --warningsAsErrors
+      - name: Check Project Pages links
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import unquote, urljoin, urlsplit
+
+          root = Path('docs/_site').resolve()
+          base = 'https://example.invalid/KanjiVariants/'
+
+          class Links(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.urls = []
+
+              def handle_starttag(self, tag, attrs):
+                  attr = 'href' if tag in ('a', 'link') else 'src' if tag in ('script', 'img') else None
+                  value = dict(attrs).get(attr)
+                  if value:
+                      self.urls.append(value)
+
+          errors = []
+          for page in root.rglob('*.html'):
+              parser = Links()
+              parser.feed(page.read_text(encoding='utf-8'))
+              page_url = base + page.relative_to(root).as_posix()
+              for link in parser.urls:
+                  parsed = urlsplit(link)
+                  if parsed.scheme or parsed.netloc or not parsed.path:
+                      continue
+                  resolved = urlsplit(urljoin(page_url, link)).path
+                  if not resolved.startswith('/KanjiVariants/'):
+                      errors.append(f'{page}: outside project path: {link}')
+                      continue
+                  target = root / unquote(resolved.removeprefix('/KanjiVariants/'))
+                  if not target.exists():
+                      errors.append(f'{page}: missing target: {link}')
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          print('Project Pages HTML links and assets: OK')
+          PY
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: docs/_site/
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5.0.1

@@ -279,6 +279,8 @@ MJ文字情報API用データは固定した `data/mji.00602.xlsx` から `pytho
 
 ## APIドキュメント
 
+公開ドキュメント: [https://koichi-kobayashi.github.io/KanjiVariants/](https://koichi-kobayashi.github.io/KanjiVariants/)
+
 DocfxのLocal Toolで、XMLコメントからAPIリファレンスと利用ガイドを生成できます。
 
 ```powershell

@@ -30,7 +30,15 @@ dotnet docfx docs/docfx.json --serve --port 8080
 
 ## 公開
 
-生成した `docs/_site/` は静的サイトとしてGitHub Pages等へ配置できます。今回はGitHub Pagesのデプロイ用Actionsや公開URLは設定していません。公開先とPages設定を決めた際に、ビルド成果物をアップロードする方式で追加してください。
+公開ドキュメント: [https://koichi-kobayashi.github.io/KanjiVariants/](https://koichi-kobayashi.github.io/KanjiVariants/)
+
+`.github/workflows/docs.yml` がmainへの対象パスのpushで、復元・Releaseビルド・全テスト・Docfx生成・リンク確認を実行します。`docs/_site/` を公式Pages artifactとしてアップロードし、別のdeployジョブが `github-pages` 環境へ公開します。生成物のコミットは不要です。SDKは.NET 8と.NET 10を用意します。Solutionにはライブラリとテストだけが含まれ、Benchmarkはビルド・実行しません。
+
+GitHubリポジトリの **Settings → Pages → Build and deployment → Source** で **GitHub Actions** を選択してください。初回公開前は公開URLへアクセスできない場合があります。`github-pages` 環境の保護設定を使用している場合は、mainからのデプロイを許可してください。追加のPATやSecretsは不要です。
+
+手動実行する場合は **Actions → Publish documentation → Run workflow** でmainを選択します。main以外のブランチではbuildのみを実行し、公開は行いません。
+
+Docfxが生成する内部リンク・CSS・JavaScriptは相対パスで、Project Pagesの `/KanjiVariants/` 配下でも解決します。CIで全HTMLのローカルリンクとアセットをこの配下で検証します。DocfxのbaseUrl設定は追加せず、ローカル閲覧も同じ構成を使用します。
 
 Docfxは開発用Local Tool依存です。Docfx本体をライブラリやサイトの配布物へコピーしないため、この導入によるLICENSE-NOTICES.mdの追記は行っていません。文字データの利用条件は引き続き同ファイルを参照してください。
 
