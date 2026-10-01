@@ -1,6 +1,6 @@
 # KanjiVariants
 
-MJ縮退マップに基づく異体字・代替文字の検索・置換と、JIS X 0208 / JIS X 0213 の文字集合判定を行える .NET 6 ライブラリです。常用漢字・教育漢字・人名用漢字、常用漢字の音訓と小学校・中学校・高等学校ごとの配当、表外読み、送り仮名、MJ文字情報も参照できます。
+MJ縮退マップに基づく異体字・代替文字の検索・置換と、JIS X 0208 / JIS X 0212 / JIS X 0213 の文字集合判定を行える .NET 6 ライブラリです。常用漢字・教育漢字・人名用漢字、常用漢字の音訓と小学校・中学校・高等学校ごとの配当、表外読み、送り仮名、MJ文字情報も参照できます。
 
 異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
 
@@ -15,6 +15,20 @@ JIS X 0208 全体を対象とします。
 - JIS X 0208 に含まれるその他の文字
 
 第1水準漢字・第2水準漢字は別々の文字集合ではなく、JIS X 0208 内部の分類です。現時点では、第1水準のみ、または第2水準のみを個別に指定するAPIはありません。
+
+### `CharacterSet.JisX0212`
+
+JIS X 0212-1990はJIS X 0208を補う独立した補助文字集合です。補助漢字5,801字と非漢字266字、計6,067文字を対象とし、JIS X 0208は自動的に含めません。JIS X 0213とも別の集合として、実データから独立して判定します。
+
+`Kanji.IsSupported` は既存の `KanjiCharacter` が解析できる漢字表現を判定します。非漢字を含む文字列は `KanjiText.IsSupported` で検査できます。同APIは既存仕様としてASCIIも使用可能と扱うため、厳密なJIS X 0212の符号化可否検査ではありません。例えば「Ä」は文字列APIでは判定できますが、漢字APIでは `FormatException` です。登録済みIVS/SVSそのものは、この集合でもsupportedになりません。
+
+```csharp
+bool jis0212 = Kanji.IsSupported("丂", CharacterSet.JisX0212); // true
+bool jis0208 = Kanji.IsSupported("丂", CharacterSet.JisX0208); // false
+bool textSupported = KanjiText.IsSupported("丂丄Ä", CharacterSet.JisX0212); // true
+```
+
+固定したUnicode ICUのJIS X 0212対応表（6,067文字）を使用し、漢字5,801字のコードポイントと区点をUnihan 18.0.0の `kJis1` と全件照合しています。全6,067文字がBMP内です。現行のJIS X 0208所属表との重複は0文字、MJ由来のJIS X 0213所属表との重複は2,751文字です。
 
 ### `CharacterSet.JisX0213Plane1`
 
@@ -73,7 +87,7 @@ var jis0213Text = KanjiText.Replace(input, CharacterSet.JisX0213);
 
 ### IVS/SVS
 
-IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。登録済みのIVS/SVSは一つの漢字表現として解析し、代替候補を調べられます。Variation Sequence自体は、`JisX0208`、`JisX0213Plane1`、`JisX0213Plane2`、`JisX0213` のいずれでも supported とは判定されません。
+IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。登録済みのIVS/SVSは一つの漢字表現として解析し、代替候補を調べられます。Variation Sequence自体は、`JisX0208`、`JisX0212`、`JisX0213Plane1`、`JisX0213Plane2`、`JisX0213` のいずれでも supported とは判定されません。
 
 一点しんにょうの字形を指定する「辻󠄀」は、`辻`（U+8FBB）とVariation Selector（U+E0100）の登録済みシーケンスです。基底文字へのフォールバックは、`KanjiFallbackOptions.AllowVariationSelectorFallback` を指定した場合だけ行います。
 
@@ -290,6 +304,8 @@ dotnet docfx docs/docfx.json
 
 HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port 8080` でローカル閲覧できます。詳細は[生成・閲覧方法](docs/articles/building-docs.md)、入口は[ドキュメントトップ](docs/index.md)を参照してください。
 
+JIS X 0212データは固定した `data/jisx-212.ucm` と `data/Unihan_OtherMappings.18.0.0.txt` から `python tools/generate_jis_x0212.py` で再生成し、`--check` で一致を確認できます。通常の生成・ビルドはネットワークへアクセスしません。取得だけを更新する場合は `python tools/fetch_jis_x0212.py` を明示的に実行します。固定原典のSHA-256、全件数、Unicode scalar・区点の妥当性と一意性、漢字部分の一致を検証します。
+
 ## データと出典
 
 生成元データを `data/` に固定し、実行時には生成済みデータを使います。JIS X 0213の所属情報は、MJ文字情報一覧表 Ver.006.02の「実装したUCS」と「X0213」に基づいています。
@@ -300,6 +316,7 @@ HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port
 | MJ縮退マップ、MJ縮退マップ 一意な変換表 | Ver.1.2.0、[文字情報技術促進協議会](https://moji.or.jp/mojikiban/map/) |
 | Unicode IVD | 2026-08-03、[Unicode IVD](https://www.unicode.org/ivd/data/2026-08-03/) |
 | Unicode Standardized Variants | Unicode 18.0.0、[Unicode Character Database](https://www.unicode.org/Public/18.0.0/ucd/StandardizedVariants.txt) |
+| JIS X 0212のUnicode対応 | [Unicode ICU対応表](https://github.com/unicode-org/icu/blob/61607c27732906d36c5bd4d23ecc092f89f53a2b/icu4c/source/data/mappings/jisx-212.ucm)、Table version 0.9（2000-08-20）、コミット固定。漢字部分は[Unihan 18.0.0](https://www.unicode.org/Public/18.0.0/ucd/Unihan.zip)の `kJis1` と照合。[公式プロパティ仕様](https://www.unicode.org/reports/tr38/#kJis1)はJIS X 0212-1990の区点を定義。 |
 | JIS X 0208 の Unicode 対応 | Pythonの `euc_jp` デコーダーで区点1–94を走査して生成。Windows CP932の拡張文字は含めない。 |
 | 常用漢字表の音訓索引 | [文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)。公開HTMLを固定し、本表の文字・音訓・語例・備考をKanjiVariants用に抽出・再構成。 |
 | 学年別漢字配当表 | [文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)。公式PDFを固定し、画像表を転記して検索表へ加工。各学年80・160・200・202・193・191字。 |

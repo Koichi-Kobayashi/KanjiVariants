@@ -10,6 +10,7 @@ internal enum CharacterSetFlags : byte
     JisX0208 = 1 << 0,
     JisX0213Plane1 = 1 << 1,
     JisX0213Plane2 = 1 << 2,
+    JisX0212 = 1 << 3,
 }
 
 internal static class Lookup
@@ -22,9 +23,15 @@ internal static class Lookup
             : (uint)(codePoint - 0x20000) < (uint)GeneratedData.SupplementaryCharacterSetFlags.Length
                 ? (CharacterSetFlags)GeneratedData.SupplementaryCharacterSetFlags[codePoint - 0x20000]
                 : CharacterSetFlags.None;
+        // 新集合の固定bit表も共通の所属判定へ接続し、既存の所属bitは変更しません。
+        if (characterSet == CharacterSet.JisX0212 &&
+            (uint)(codePoint >> 5) < (uint)GeneratedJisX0212Data.Membership.Length &&
+            (GeneratedJisX0212Data.Membership[codePoint >> 5] & (1u << (codePoint & 31))) != 0)
+            flags |= CharacterSetFlags.JisX0212;
         return characterSet switch
         {
             CharacterSet.JisX0208 => (flags & CharacterSetFlags.JisX0208) != 0,
+            CharacterSet.JisX0212 => (flags & CharacterSetFlags.JisX0212) != 0,
             CharacterSet.JisX0213Plane1 => (flags & CharacterSetFlags.JisX0213Plane1) != 0,
             CharacterSet.JisX0213Plane2 => (flags & CharacterSetFlags.JisX0213Plane2) != 0,
             CharacterSet.JisX0213 => (flags & (CharacterSetFlags.JisX0213Plane1 | CharacterSetFlags.JisX0213Plane2)) != 0,
@@ -75,7 +82,7 @@ internal static class Lookup
 
     internal static void Validate(CharacterSet characterSet)
     {
-        if ((uint)characterSet > (uint)CharacterSet.JisX0213)
+        if ((uint)characterSet > (uint)CharacterSet.JisX0212)
             throw new ArgumentOutOfRangeException(nameof(characterSet));
     }
 

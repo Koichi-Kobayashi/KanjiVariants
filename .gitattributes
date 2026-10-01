@@ -1,2 +1,7 @@
 # 固定した公式HTMLの文字コード・改行を保持し、原典のSHA-256検証を可能にします。
 /data/Okurigana/*.html -text
+
+# 固定原典のSHA-256がcheckout時の改行変換で変わらないよう保持します。
+/data/jisx-212.ucm -text
+/data/Unihan_OtherMappings.18.0.0.txt -text
+/data/ICU-LICENSE.txt -text
