@@ -220,6 +220,19 @@ foreach (var match in MjCharacter.Find("髙"))
 
 収録件数はMJ文字58,862件（文字図形名も58,862件）、対応UCS58,859件、実装UCS52,607件、IVS欄11,382件（シーケンス11,384件）、SVS欄89件（シーケンス89件）、漢字施策2,999件（常用2,136・人名用863）、互換漢字101件、X0213欄13,707件です。`MJ059399` と `MJ059400` はIVSを2件ずつ保持します。現行データに複数SVSの行はありませんが、SVSも複数値を扱う同じ処理を使用します。漢字施策を持つ全行の実装UCSは、既存の常用漢字・人名用漢字集合と一致することを検証しています。
 
+## 文字診断
+
+`KanjiDiagnostics.Analyze` で、一つの漢字表現のUnicode情報、JIS文字集合への所属、常用・教育・人名用漢字の情報、小学校・中学校・高等学校ごとの音訓配当、MJ文字情報をまとめて取得できます。既存APIの結果を集約し、旧字体やIVS/SVSを基底文字へ自動変換しません。
+
+```csharp
+var result = KanjiDiagnostics.Analyze("髙");
+Console.WriteLine($"U+{result.BaseCodePoint:X}");
+Console.WriteLine(result.IsJisX0208);
+Console.WriteLine(result.IsJinmeiyoKanji);
+```
+
+`UnicodeScalarCount` はスカラー数、`Utf16CodeUnitCount` はUTF-16コード単位数です。音訓配当とMJ一致情報は既存APIの読み取り専用一覧を共有します。文字列入力は `KanjiCharacter.Parse` と同じく、漢字一文字または登録済みIVS/SVSだけを受理します。nullは `ArgumentNullException`、空文字・複数文字・未登録VSなどは `FormatException` です。代替候補は含まないため、必要な場合は `Kanji.GetAlternatives` を別途使用してください。
+
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
@@ -229,6 +242,7 @@ foreach (var match in MjCharacter.Find("髙"))
 | `Kanji.IsSupported` | 漢字表現そのものが指定された `CharacterSet` に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
 | `KanjiText.IsSupported` | 文字列全体を指定された `CharacterSet` で検証 | 任意の文字列 |
+| `KanjiDiagnostics` | 一つの漢字表現についてUnicode・JIS・常用/教育/人名用・音訓配当・MJ情報をまとめて取得 | 漢字一文字、または登録済みIVS/SVS |
 | `MjCharacter` | MJ文字図形名・Unicode・IVS/SVS・JIS X 0213・漢字施策等のMJ文字情報を参照 | MJ文字図形名、Unicodeスカラー一文字、または登録済みIVS/SVS |
 | `JoyoKanji` | 常用漢字表の本表字、旧字体等、音訓、語例、備考を参照 | 常用漢字表の本表字一文字 |
 | `JoyoReading` | 本表字と読みの組み合わせが常用漢字表に掲載されているか、表外読みかを判定 | 本表字一文字と読み。読みの正誤判定はしない |

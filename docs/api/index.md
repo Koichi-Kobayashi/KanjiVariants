@@ -10,6 +10,11 @@ public型を機能別に参照できます。各型・メンバーの説明は�
 - <xref:KanjiVariants.CharacterSet>
 - <xref:KanjiVariants.KanjiFallbackOptions>
 
+## 文字診断
+
+- <xref:KanjiVariants.KanjiDiagnostics>
+- <xref:KanjiVariants.KanjiDiagnosticResult>
+
 ## 常用漢字・表外読み
 
 - <xref:KanjiVariants.JoyoKanji>

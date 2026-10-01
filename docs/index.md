@@ -14,6 +14,8 @@ MJ縮退マップに基づく漢字代替候補の検索・置換と、公的な
 - 送り仮名の公式掲載語の参照
 - MJ文字図形名・Unicode・IVS/SVSなどの文字情報検索
 
+- [文字診断](articles/diagnostics.md)：一つの漢字表現のUnicode・JIS・各漢字表・音訓配当・MJ情報を集約
+
 ## はじめる
 
 [Getting Started](articles/getting-started.md)で導入と基本操作を確認できます。[API Reference](api/index.md)では機能別にpublic APIを参照できます。

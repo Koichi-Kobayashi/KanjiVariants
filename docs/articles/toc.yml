@@ -1,5 +1,7 @@
 - name: Getting Started
   href: getting-started.md
+- name: 文字診断
+  href: diagnostics.md
 - name: 文字集合
   href: character-sets.md
 - name: 常用漢字
