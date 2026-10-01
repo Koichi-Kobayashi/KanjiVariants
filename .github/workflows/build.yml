@@ -1,0 +1,49 @@
+name: Build DLL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'KanjiVariants/**'
+      - 'KanjiVariants.Tests/**'
+      - 'Directory.Build.props'
+      - 'KanjiVariants.slnx'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.0.0
+        with:
+          # .slnxを扱うSDKと、net8.0テストを実行するランタイムを用意します。
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Restore
+        run: dotnet restore KanjiVariants.slnx
+      - name: Build Release
+        run: dotnet build KanjiVariants.slnx -c Release --no-restore
+      - name: Test
+        run: dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release --no-build
+      - name: Verify DLL and XML
+        # 一方だけ生成された状態でもアップロードしないよう、両方の存在を確認します。
+        run: |
+          test -s KanjiVariants/bin/Release/net6.0/KanjiVariants.dll
+          test -s KanjiVariants/bin/Release/net6.0/KanjiVariants.xml
+      - name: Upload DLL and XML
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: KanjiVariants-net6.0
+          # 共通の親ディレクトリがArtifactのルートになり、DLL/XMLだけを格納します。
+          path: |
+            KanjiVariants/bin/Release/net6.0/KanjiVariants.dll
+            KanjiVariants/bin/Release/net6.0/KanjiVariants.xml
+          if-no-files-found: error
