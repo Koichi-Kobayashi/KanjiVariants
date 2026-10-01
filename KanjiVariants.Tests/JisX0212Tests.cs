@@ -120,10 +120,10 @@ public sealed class JisX0212Tests
     public void IsSupported_AllFixedSourceCharacters_AndIntersectionsMatch()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "data", "jisx-212.ucm")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "data", "JIS", "jisx-212.ucm")))
             directory = directory.Parent;
         Assert.NotNull(directory);
-        string path = Path.Combine(directory!.FullName, "data", "jisx-212.ucm");
+        string path = Path.Combine(directory!.FullName, "data", "JIS", "jisx-212.ucm");
         var codePoints = new HashSet<int>();
         int han = 0, supplementary = 0, overlap0208 = 0, overlap0213 = 0;
         foreach (string line in File.ReadLines(path))

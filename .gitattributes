@@ -2,6 +2,6 @@
 /data/Okurigana/*.html -text
 
 # 固定原典のSHA-256がcheckout時の改行変換で変わらないよう保持します。
-/data/jisx-212.ucm -text
-/data/Unihan_OtherMappings.18.0.0.txt -text
-/data/ICU-LICENSE.txt -text
+/data/JIS/jisx-212.ucm -text
+/data/Unicode/Unihan_OtherMappings.18.0.0.txt -text
+/data/JIS/ICU-LICENSE.txt -text

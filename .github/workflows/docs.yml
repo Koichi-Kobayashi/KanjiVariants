@@ -6,6 +6,7 @@ on:
     paths:
       - 'KanjiVariants/**'
       - 'KanjiVariants.Tests/**'
+      - 'data/**'
       - 'docs/**'
       - '.config/dotnet-tools.json'
       - 'Directory.Build.props'

@@ -202,7 +202,7 @@ var appendix = Okurigana.GetByKind(OkuriganaRuleKind.Appendix);
 
 ## MJ文字情報
 
-`MjCharacter` は、固定した `data/mji.00602.xlsx`（MJ文字情報一覧表 Ver.006.02）のMJ文字図形名・Unicode表現・漢字施策・X0213情報を参照します。文字図形名から一意に取得でき、Unicode表現からの検索では複数の関連MJ文字が返る場合があります。
+`MjCharacter` は、固定した `data/MJ/mji.00602.xlsx`（MJ文字情報一覧表 Ver.006.02）のMJ文字図形名・Unicode表現・漢字施策・X0213情報を参照します。文字図形名から一意に取得でき、Unicode表現からの検索では複数の関連MJ文字が返る場合があります。
 
 ```csharp
 var entry = MjCharacter.GetByMjGlyphName("MJ028902"); // 実装したUCS: U+9AD9（髙）
@@ -244,7 +244,7 @@ foreach (var match in MjCharacter.Find("髙"))
 
 ## 一意な変換先の一覧
 
-MJ縮退マップの一意な変換表から作成した一覧を [`data/MJUniqueAlternatives.1.2.0.csv`](data/MJUniqueAlternatives.1.2.0.csv) としてリポジトリで公開しています。
+MJ縮退マップの一意な変換表から作成した一覧を [`data/MJ/MJUniqueAlternatives.1.2.0.csv`](data/MJ/MJUniqueAlternatives.1.2.0.csv) としてリポジトリで公開しています。
 同じUnicode表現が複数行に現れる場合があります。MJ文字図形名で区別される字形ごとに変換先が異なることがあるためです。この一覧は特定の文字集合への収録可否で絞り込んでいません。変換先のUCSと、データに記録がある場合はJIS X 0213の面区点位置を掲載しています。
 
 ## 文字列処理のルール
@@ -277,19 +277,19 @@ dotnet build KanjiVariants.slnx -c Release
 dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 ```
 
-ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。MJ等の生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。常用漢字データは固定した `data/JoyoKanjiOnkunIndex.html` から `python tools/generate_joyo.py` で再生成できます。原典の取得を更新する場合だけ `python tools/fetch_joyo.py` を明示的に実行します。実行時のネットワーク接続は不要です。
+ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。MJ等の生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。常用漢字データは固定した `data/Joyo/JoyoKanjiOnkunIndex.html` から `python tools/generate_joyo.py` で再生成できます。原典の取得を更新する場合だけ `python tools/fetch_joyo.py` を明示的に実行します。実行時のネットワーク接続は不要です。
 
-MJ文字情報API用データは固定した `data/mji.00602.xlsx` から `python tools/generate_mj_character.py` で再生成し、`python tools/generate_mj_character.py --check` で生成済みデータとの一致を確認できます。実行時にExcelやネットワーク接続は必要ありません。
+MJ文字情報API用データは固定した `data/MJ/mji.00602.xlsx` から `python tools/generate_mj_character.py` で再生成し、`python tools/generate_mj_character.py --check` で生成済みデータとの一致を確認できます。実行時にExcelやネットワーク接続は必要ありません。
 
-人名用漢字データは固定した `data/mji.00602.xlsx` から `python tools/generate_jinmeiyo.py` で再生成し、`python tools/generate_jinmeiyo.py --check` で生成結果との一致を確認できます。
+人名用漢字データは固定した `data/MJ/mji.00602.xlsx` から `python tools/generate_jinmeiyo.py` で再生成し、`python tools/generate_jinmeiyo.py --check` で生成結果との一致を確認できます。
 
 送り仮名データは `data/Okurigana/` に固定した文化庁公式HTML（`rule1.html`～`rule7.html`、`appendix.html`）から `python tools/generate_okurigana.py` で再生成し、`python tools/generate_okurigana.py --check` で生成済みファイルとの一致を確認できます。原典HTMLの更新取得は `python tools/fetch_okurigana.py` を明示的に実行します。通常の生成・ビルド・テストで取得処理は実行しません。Generatorは固定HTMLのSHA-256、見出し、語例ブロック数、通則別・区分別件数を検証し、変化があれば停止します。原典更新後は解析方法と掲載語を再照合してください。
 
-教育漢字データは `python tools/generate_education_kanji.py` で再生成し、`--check` で生成済みファイルとの一致を確認できます。平成29年告示版の原典PDFは画像の表なので、その転記を `data/EducationKanjiGradeTable.txt` に固定しています。Generatorは固定PDFのSHA-256と転記の件数・重複を検証します。原典の更新取得は `python tools/fetch_education_kanji.py` で明示的に行い、PDFが変わった場合は転記を再照合してください。
+教育漢字データは `python tools/generate_education_kanji.py` で再生成し、`--check` で生成済みファイルとの一致を確認できます。平成29年告示版の原典PDFは画像の表なので、その転記を `data/Education/EducationKanjiGradeTable.txt` に固定しています。Generatorは固定PDFのSHA-256と転記の件数・重複を検証します。原典の更新取得は `python tools/fetch_education_kanji.py` で明示的に行い、PDFが変わった場合は転記を再照合してください。
 
 性能計測は別プロジェクトで実行します。`dotnet run --project KanjiVariants.Benchmarks/KanjiVariants.Benchmarks.csproj -c Release -- --filter "*"` はBenchmarkDotNetを復元し、検索・置換とメモリ割り当てを計測します。
 
-音訓別の学校段階と付表は、固定した `data/JoyoKanjiSchoolStages2017.pdf` から `python tools/generate_joyo_education.py` で再生成できます。座標付きPDF文字抽出に `pdfplumber` が必要です。OCRは使用しません。`--check` で生成済みファイルとの一致を確認できます。原PDFのテキスト層で「𠮟」だけが欠落するため、Generatorは該当行の位置・音訓と既存 `JoyoKanji` を検証してから補正します。
+音訓別の学校段階と付表は、固定した `data/Joyo/JoyoKanjiSchoolStages2017.pdf` から `python tools/generate_joyo_education.py` で再生成できます。座標付きPDF文字抽出に `pdfplumber` が必要です。OCRは使用しません。`--check` で生成済みファイルとの一致を確認できます。原PDFのテキスト層で「𠮟」だけが欠落するため、Generatorは該当行の位置・音訓と既存 `JoyoKanji` を検証してから補正します。
 
 ## APIドキュメント
 
@@ -304,7 +304,7 @@ dotnet docfx docs/docfx.json
 
 HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port 8080` でローカル閲覧できます。詳細は[生成・閲覧方法](docs/articles/building-docs.md)、入口は[ドキュメントトップ](docs/index.md)を参照してください。
 
-JIS X 0212データは固定した `data/jisx-212.ucm` と `data/Unihan_OtherMappings.18.0.0.txt` から `python tools/generate_jis_x0212.py` で再生成し、`--check` で一致を確認できます。通常の生成・ビルドはネットワークへアクセスしません。取得だけを更新する場合は `python tools/fetch_jis_x0212.py` を明示的に実行します。固定原典のSHA-256、全件数、Unicode scalar・区点の妥当性と一意性、漢字部分の一致を検証します。
+JIS X 0212データは固定した `data/JIS/jisx-212.ucm` と `data/Unicode/Unihan_OtherMappings.18.0.0.txt` から `python tools/generate_jis_x0212.py` で再生成し、`--check` で一致を確認できます。通常の生成・ビルドはネットワークへアクセスしません。取得だけを更新する場合は `python tools/fetch_jis_x0212.py` を明示的に実行します。固定原典のSHA-256、全件数、Unicode scalar・区点の妥当性と一意性、漢字部分の一致を検証します。
 
 ## データと出典
 
@@ -325,7 +325,7 @@ JIS X 0212データは固定した `data/jisx-212.ucm` と `data/Unihan_OtherMap
 
 ### 学年別漢字配当表の照合結果
 
-2026-09-29に、`data/EducationKanjiGradeTable.txt` の**収録文字と所属学年**を、文部科学省の公開資料から独立に再構成して照合しました。照合対象の平成29年版PDFのSHA-256は `6AF90F134B243E44F9767C37EE3079FAC092883FD6359B836A5733DD25B43902` で、TXTに記録した値と一致しています。
+2026-09-29に、`data/Education/EducationKanjiGradeTable.txt` の**収録文字と所属学年**を、文部科学省の公開資料から独立に再構成して照合しました。照合対象の平成29年版PDFのSHA-256は `6AF90F134B243E44F9767C37EE3079FAC092883FD6359B836A5733DD25B43902` で、TXTに記録した値と一致しています。
 
 1. [平成10年12月告示・平成15年12月一部改正の配当表](https://www.mext.go.jp/a_menu/shotou/cs/1320015.htm)から、HTMLの表を直接読み取り、旧版の1006字を学年別に取得しました。
 2. [平成20年3月告示の小学校学習指導要領](https://www.mext.go.jp/component/a_menu/education/micro_detail/__icsFiles/afieldfile/2010/11/29/syo.pdf)と、[平成27年3月一部改正後の同指導要領](https://www.mext.go.jp/a_menu/shotou/new-cs/youryou/__icsFiles/afieldfile/2015/03/26/1356250_1.pdf)の配当表を比較しました。後者はPDFのテキストレイヤーから直接抽出でき、平成10年版HTMLと全6学年で文字集合・掲載順が一致しました。平成20年告示当初のPDFもWeb上の可読テキストでは一致しましたが、そのWeb側の抽出方式は確認できていません。
@@ -344,7 +344,7 @@ JIS X 0212データは固定した `data/jisx-212.ucm` と `data/Unihan_OtherMap
 
 ### 日本語IVSの閲覧用一覧
 
-[`data/Japanese_IVS_2026-08-03.xlsx`](data/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) からMoji_Joho、Adobe-Japan1、Hanyo-DenshiのCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
+[`data/Unicode/Japanese_IVS_2026-08-03.xlsx`](data/Unicode/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) からMoji_Joho、Adobe-Japan1、Hanyo-DenshiのCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
 
 IPAmj明朝の配布元は、同フォントのIVS実装が2017-12-12版のMoji_Johoコレクションに準拠すると説明しています。そのため、Adobe-Japan1やHanyo-Denshiのシーケンス、または後のIVDで追加されたシーケンスでは、Excel上で指定された字形が表示されるとは限りません。見た目が同じでもVariation Selectorがないとは判断せず、符号位置を確認してください。
 

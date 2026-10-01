@@ -9,7 +9,7 @@ import urllib.request
 
 
 SOURCE_URL = "https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html"
-OUTPUT = Path(__file__).resolve().parent.parent / "data" / "JoyoKanjiOnkunIndex.html"
+OUTPUT = Path(__file__).resolve().parent.parent / "data" / "Joyo" / "JoyoKanjiOnkunIndex.html"
 
 
 def main() -> None:
@@ -18,6 +18,7 @@ def main() -> None:
         content = response.read()
     # 正本の公開HTMLはShift_JIS宣言。変更されていたら生成前に明示的に確認する。
     content.decode("cp932")
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_bytes(content)
     print(f"saved={OUTPUT} bytes={len(content)} sha256={hashlib.sha256(content).hexdigest()}")
 

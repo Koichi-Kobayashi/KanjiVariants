@@ -13,8 +13,8 @@ DATA = ROOT / 'data'
 OUTPUT = ROOT / 'KanjiVariants/Generated/GeneratedJisX0212Data.g.cs'
 ICU_COMMIT = '61607c27732906d36c5bd4d23ecc092f89f53a2b'
 INPUTS = {
-    'jisx-212.ucm': 'a3ad8492609c8fc8766f64610ef298b71ac872051fad5cd88802509fd6ee5f7b',
-    'Unihan_OtherMappings.18.0.0.txt': 'fc7bbb8f923fa1e922a4d421aa15387d1c68250cc5e7619bdf81f575ab38472b',
+    'JIS/jisx-212.ucm': 'a3ad8492609c8fc8766f64610ef298b71ac872051fad5cd88802509fd6ee5f7b',
+    'Unicode/Unihan_OtherMappings.18.0.0.txt': 'fc7bbb8f923fa1e922a4d421aa15387d1c68250cc5e7619bdf81f575ab38472b',
 }
 
 
@@ -34,7 +34,7 @@ def parse():
             raise ValueError(f'{name}: 固定原典のSHA-256が一致しません')
     all_chars = {}
     in_charmap = False
-    for line in (DATA / 'jisx-212.ucm').read_text(encoding='utf-8').splitlines():
+    for line in (DATA / 'JIS/jisx-212.ucm').read_text(encoding='utf-8').splitlines():
         if line == 'CHARMAP':
             in_charmap = True
             continue
@@ -49,7 +49,7 @@ def parse():
         cp, ku, ten = (int(value, 16) for value in match.groups())
         add(all_chars, cp, ku - 0x20, ten - 0x20)
     han = {}
-    for line in (DATA / 'Unihan_OtherMappings.18.0.0.txt').read_text(encoding='utf-8').splitlines():
+    for line in (DATA / 'Unicode/Unihan_OtherMappings.18.0.0.txt').read_text(encoding='utf-8').splitlines():
         if '\tkJis1\t' not in line or line.startswith('#'):
             continue
         match = re.fullmatch(r'U\+([0-9A-F]{4,6})\tkJis1\t([0-9]{2})([0-9]{2})', line)

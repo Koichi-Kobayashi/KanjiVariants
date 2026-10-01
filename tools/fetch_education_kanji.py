@@ -9,7 +9,7 @@ import urllib.request
 
 
 SOURCE_URL = "https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf"
-OUTPUT = Path(__file__).resolve().parent.parent / "data" / "EducationKanjiGradeTable.pdf"
+OUTPUT = Path(__file__).resolve().parent.parent / "data" / "Education" / "EducationKanjiGradeTable.pdf"
 
 
 def main() -> None:
@@ -18,6 +18,7 @@ def main() -> None:
         content = response.read()
     if not content.startswith(b"%PDF-"):
         raise ValueError("PDFではない応答です")
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_bytes(content)
     print(f"saved={OUTPUT} bytes={len(content)} sha256={hashlib.sha256(content).hexdigest()}")
     print("固定の転記ファイルとPDF画像を照合してから、Generatorを実行してください。")

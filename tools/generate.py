@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'data'
 OUT = ROOT / 'KanjiVariants' / 'Generated' / 'GeneratedData.g.cs'
-UNIQUE_CSV = DATA / 'MJUniqueAlternatives.1.2.0.csv'
+UNIQUE_CSV = DATA / 'MJ/MJUniqueAlternatives.1.2.0.csv'
 NS = '{http://purl.oclc.org/ooxml/spreadsheetml/main}'
 JIS_X_0208 = 1 << 0
 JIS_X_0213_PLANE_1 = 1 << 1
@@ -29,7 +29,7 @@ SUPPLEMENTARY_END = 0x323B0
 
 def mj_rows():
     # 厳格OOXMLの共有文字列表を使い、巨大なワークシート本体は行ごとに読み込みます。
-    with zipfile.ZipFile(DATA / 'mji.00602.xlsx') as book:
+    with zipfile.ZipFile(DATA / 'MJ/mji.00602.xlsx') as book:
         strings = [''.join(t.text or '' for t in cell.iter(NS + 't'))
                    for cell in ET.fromstring(book.read('xl/sharedStrings.xml'))]
         with book.open('xl/worksheets/sheet1.xml') as sheet:
@@ -194,8 +194,8 @@ ARRAY_COMMENTS = {
 def main():
     # 一覧・候補・一意変換表はMJ文字図形名で対応付けます。
     mj = {row['C']: row for row in mj_rows()}
-    shrink = json.loads((DATA / 'MJShrinkMap.1.2.0.json').read_text(encoding='utf-8'))['content']
-    unique = json.loads((DATA / 'MJSU.1.2.0.json').read_text(encoding='utf-8'))['content']
+    shrink = json.loads((DATA / 'MJ/MJShrinkMap.1.2.0.json').read_text(encoding='utf-8'))['content']
+    unique = json.loads((DATA / 'MJ/MJSU.1.2.0.json').read_text(encoding='utf-8'))['content']
     assert len(mj) == len(shrink) == len(unique) == 58862
     unique_by_mj = {item['MJ文字図形名']: scalar(item['変換先']['UCS']) or 0 for item in unique}
     groups = ('JIS包摂規準・UCS統合規則', '法務省戸籍法関連通達・通知',
@@ -255,8 +255,8 @@ def main():
             scalar_to_entry.setdefault(cp, next(iter(indices)))
 
     # The registered sequences are valid even without a corresponding MJ entry.
-    valid = set(registered(DATA / 'IVD_Sequences.txt'))
-    valid.update(registered(DATA / 'StandardizedVariants.txt'))
+    valid = set(registered(DATA / 'Unicode/IVD_Sequences.txt'))
+    valid.update(registered(DATA / 'Unicode/StandardizedVariants.txt'))
     export_unique_alternatives(mj, unique, valid)
     variation_to_entry = {k: v for k, v in variation_to_entry.items() if k in valid}
     scalar_keys = sorted(scalar_to_entry)

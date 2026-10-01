@@ -6,6 +6,7 @@ on:
     paths:
       - 'KanjiVariants/**'
       - 'KanjiVariants.Tests/**'
+      - 'data/**'
       - 'Directory.Build.props'
       - 'KanjiVariants.slnx'
       - '.github/workflows/build.yml'

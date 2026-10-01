@@ -24,7 +24,7 @@ def parse():
     rows = list(mj_rows())
     names = set()
     stats = Counter()
-    registered_keys = set(registered(DATA / 'IVD_Sequences.txt')) | set(registered(DATA / 'StandardizedVariants.txt'))
+    registered_keys = set(registered(DATA / 'Unicode/IVD_Sequences.txt')) | set(registered(DATA / 'Unicode/StandardizedVariants.txt'))
     for row in rows:
         name = row.get('C', '')
         if not re.fullmatch(r'MJ[0-9]{6}', name) or name in names:
