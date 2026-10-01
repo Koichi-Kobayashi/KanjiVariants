@@ -322,4 +322,14 @@ public sealed class KanjiVariantsTests
     [Fact]
     public void Replace_NullInput_ThrowsArgumentNullException() =>
         Assert.Throws<ArgumentNullException>(() => KanjiText.Replace(null!, JisX0208));
+
+    [Fact]
+    public void Replace_SupplementaryTargetAndBmpTarget_WritesBothUtf16Lengths()
+    {
+        // 生成済みの一意変換 U+34F8 → U+20807 を使い、二符号単位の変換先も確認します。
+        Assert.True(Kanji.TryGetAlternative("\u34F8", BothPlanes, out var target));
+        Assert.Equal("\U00020807", target.ToString());
+        Assert.Equal("\U00020807辻\U00020807",
+            KanjiText.Replace("\u34F8辻\U000E0100\u34F8", BothPlanes, AllowVs));
+    }
 }

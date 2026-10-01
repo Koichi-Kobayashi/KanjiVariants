@@ -36,7 +36,7 @@ public static class JoyoKanjiAppendix
                 kindLists[(int)entry.Kind].Add(entry);
                 foreach (var word in entry.Words)
                     Add(words, word.Normalize(NormalizationForm.FormC), entry);
-                Add(readings, JoyoEducationKey.Normalize(entry.Reading), entry);
+                Add(readings, ReadingNormalizer.Normalize(entry.Reading), entry);
             }
             ByStage = new IReadOnlyList<JoyoKanjiAppendixEntry>[]
             {
@@ -104,7 +104,7 @@ public static class JoyoKanjiAppendix
     public static IReadOnlyList<JoyoKanjiAppendixEntry> FindByReading(string reading)
     {
         ArgumentNullException.ThrowIfNull(reading);
-        return Store.ByReading.TryGetValue(JoyoEducationKey.Normalize(reading), out var values)
+        return Store.ByReading.TryGetValue(ReadingNormalizer.Normalize(reading), out var values)
             ? values : Empty;
     }
 }

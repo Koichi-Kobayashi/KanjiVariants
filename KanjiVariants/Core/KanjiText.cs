@@ -56,12 +56,21 @@ public static class KanjiText
             {
                 // 最初の置換位置までを一度だけコピーし、以降の文字を順に追記します。
                 builder ??= new StringBuilder(text.Length).Append(text, 0, start);
-                builder.Append(new Rune(target).ToString());
+                AppendRune(builder, target);
             }
             else
                 builder?.Append(text, start, offset - start);
         }
         return builder?.ToString() ?? text;
+    }
+
+    private static void AppendRune(StringBuilder builder, int codePoint)
+    {
+        // 置換時だけ最大二符号単位のバッファーを使い、一時文字列を作りません。
+        // 別メソッドに置くことで、置換なしの走査にstackallocの影響を持ち込みません。
+        Span<char> buffer = stackalloc char[2];
+        int written = new Rune(codePoint).EncodeToUtf16(buffer);
+        builder.Append(buffer[..written]);
     }
 
     /// <summary>文字列の全ての文字が指定文字集合で使用可能かを判定します。</summary>

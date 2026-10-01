@@ -1,8 +1,6 @@
 // Copyright (c) 2026 Koichi Kobayashi
 // Licensed under the MIT License.
 
-using System.Text;
-
 namespace KanjiVariants;
 
 /// <summary>常用漢字の音訓ごとに、文部科学省資料の指導段階を参照します。</summary>
@@ -48,7 +46,7 @@ public static class JoyoKanjiEducation
                     var item = new KanjiReadingEducation(joyo.Readings[j], stage, special[position] == 1);
                     entries[j] = item;
                     grouped[(int)stage].Add(item);
-                    if (!ByReading.TryAdd((codePoint, JoyoEducationKey.Normalize(item.Reading.Reading)), item))
+                    if (!ByReading.TryAdd((codePoint, ReadingNormalizer.Normalize(item.Reading.Reading)), item))
                         throw new InvalidOperationException("同じ漢字に正規化後の同一音訓が重複しています。");
                 }
                 ByCharacter.Add(codePoint, Array.AsReadOnly(entries));
@@ -75,7 +73,7 @@ public static class JoyoKanjiEducation
     {
         ArgumentNullException.ThrowIfNull(reading);
         return !character.HasVariationSelector &&
-               Store.ByReading.TryGetValue((character.BaseCharacter.Value, JoyoEducationKey.Normalize(reading)), out var entry)
+               Store.ByReading.TryGetValue((character.BaseCharacter.Value, ReadingNormalizer.Normalize(reading)), out var entry)
             ? entry : null;
     }
 
@@ -127,18 +125,5 @@ public static class JoyoKanjiEducation
     {
         if ((uint)stage > (uint)SchoolStage.HighSchool)
             throw new ArgumentOutOfRangeException(nameof(stage));
-    }
-}
-
-internal static class JoyoEducationKey
-{
-    internal static string Normalize(string value)
-    {
-        // 既存JoyoKanjiの検索と同じく、正本の読みは変えずに検索キーだけ揃えます。
-        var builder = new StringBuilder(value.Length);
-        foreach (char character in value.Normalize(NormalizationForm.FormC))
-            builder.Append(character is >= '\u30A1' and <= '\u30F6'
-                ? (char)(character - 0x60) : character);
-        return builder.ToString();
     }
 }

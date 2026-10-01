@@ -1,8 +1,6 @@
 // Copyright (c) 2026 Koichi Kobayashi
 // Licensed under the MIT License.
 
-using System.Text;
-
 namespace KanjiVariants;
 
 /// <summary>文化庁「常用漢字表の音訓索引」の本表字・音訓・語例・備考を調べます。</summary>
@@ -10,6 +8,25 @@ public static class JoyoKanji
 {
     private static readonly IReadOnlyList<JoyoKanjiEntry> EmptyEntries = Array.Empty<JoyoKanjiEntry>();
     private static readonly IReadOnlyList<KanjiReading> EmptyReadings = Array.Empty<KanjiReading>();
+    private static class ReadingKeys
+    {
+        // 公開する読みは保持し、固定の候補を検索のたびに正規化しないようにします。
+        internal static readonly string[][] ByEntry = Build();
+
+        private static string[][] Build()
+        {
+            var entries = GeneratedJoyoKanjiData.Entries;
+            var result = new string[entries.Length][];
+            for (int i = 0; i < entries.Length; i++)
+            {
+                var readings = entries[i].Readings;
+                result[i] = new string[readings.Count];
+                for (int j = 0; j < readings.Count; j++)
+                    result[i][j] = ReadingNormalizer.Normalize(readings[j].Reading);
+            }
+            return result;
+        }
+    }
     private static class ReadingIndices
     {
         internal static readonly Dictionary<string, IReadOnlyList<JoyoKanjiEntry>> All = BuildIndex(null);
@@ -44,12 +61,12 @@ public static class JoyoKanji
     public static bool IsReadingSupported(KanjiCharacter character, string reading)
     {
         ArgumentNullException.ThrowIfNull(reading);
-        var entry = Get(character);
-        if (entry is null)
+        int index = FindIndex(character);
+        if (index < 0)
             return false;
-        string normalized = Normalize(reading);
-        foreach (var item in entry.Readings)
-            if (Normalize(item.Reading) == normalized)
+        string normalized = ReadingNormalizer.Normalize(reading);
+        foreach (string key in ReadingKeys.ByEntry[index])
+            if (key == normalized)
                 return true;
         return false;
     }
@@ -65,7 +82,7 @@ public static class JoyoKanji
     public static IReadOnlyList<JoyoKanjiEntry> FindByReading(string reading)
     {
         ArgumentNullException.ThrowIfNull(reading);
-        return ReadingIndices.All.TryGetValue(Normalize(reading), out var entries) ? entries : EmptyEntries;
+        return ReadingIndices.All.TryGetValue(ReadingNormalizer.Normalize(reading), out var entries) ? entries : EmptyEntries;
     }
 
     /// <summary>音読みまたは訓読みに限定して本表字を逆引きします。</summary>
@@ -78,7 +95,7 @@ public static class JoyoKanji
             KanjiReadingType.Kun => ReadingIndices.Kun,
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
-        return index.TryGetValue(Normalize(reading), out var entries) ? entries : EmptyEntries;
+        return index.TryGetValue(ReadingNormalizer.Normalize(reading), out var entries) ? entries : EmptyEntries;
     }
 
     private static int FindIndex(KanjiCharacter character) => character.HasVariationSelector
@@ -88,14 +105,17 @@ public static class JoyoKanji
     private static Dictionary<string, IReadOnlyList<JoyoKanjiEntry>> BuildIndex(KanjiReadingType? type)
     {
         var map = new Dictionary<string, List<JoyoKanjiEntry>>(StringComparer.Ordinal);
-        foreach (var entry in GeneratedJoyoKanjiData.Entries)
+        var entries = GeneratedJoyoKanjiData.Entries;
+        for (int i = 0; i < entries.Length; i++)
         {
+            var entry = entries[i];
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var reading in entry.Readings)
+            for (int j = 0; j < entry.Readings.Count; j++)
             {
+                var reading = entry.Readings[j];
                 if (type is not null && reading.Type != type)
                     continue;
-                string key = Normalize(reading.Reading);
+                string key = ReadingKeys.ByEntry[i][j];
                 // 同じ字に同じ読みが複数行あっても、検索結果の字は一度だけ返します。
                 if (!seen.Add(key))
                     continue;
@@ -110,12 +130,4 @@ public static class JoyoKanji
         return result;
     }
 
-    private static string Normalize(string reading)
-    {
-        // 正本のカタカナを保持しつつ、検索キーだけひらがなへ揃えます。
-        var builder = new StringBuilder(reading.Length);
-        foreach (char c in reading.Normalize(NormalizationForm.FormC))
-            builder.Append(c is >= '\u30A1' and <= '\u30F6' ? (char)(c - 0x60) : c);
-        return builder.ToString();
-    }
 }

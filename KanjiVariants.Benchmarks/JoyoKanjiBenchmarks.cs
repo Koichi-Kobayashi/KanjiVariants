@@ -44,4 +44,26 @@ public class JoyoKanjiBenchmarks
 
     [Benchmark]
     public bool IsReadingSupported_Miss() => JoyoKanji.IsReadingSupported(_hit, "アイ");
+
+    // 合成済み・分解済みの濁点とかな種別を分け、正規化の費用を比較します。
+    [Benchmark]
+    public IReadOnlyList<JoyoKanjiEntry> FindByReading_HiraganaHit() => JoyoKanji.FindByReading("がく");
+
+    [Benchmark]
+    public IReadOnlyList<JoyoKanjiEntry> FindByReading_KatakanaHit() => JoyoKanji.FindByReading("ガク");
+
+    [Benchmark]
+    public IReadOnlyList<JoyoKanjiEntry> FindByReading_DecomposedHit() => JoyoKanji.FindByReading("か\u3099く");
+
+    [Benchmark]
+    public IReadOnlyList<JoyoKanjiEntry> FindByReading_HiraganaMiss() => JoyoKanji.FindByReading("みとうろくのよみ");
+
+    [Benchmark]
+    public bool IsReadingSupported_HiraganaHit() => JoyoKanji.IsReadingSupported(_hit, "あ");
+
+    [Benchmark]
+    public bool IsReadingSupported_HiraganaMiss() => JoyoKanji.IsReadingSupported(_hit, "みとうろく");
+
+    [Benchmark]
+    public bool IsReadingSupported_DecomposedHit() => JoyoKanji.IsReadingSupported("学", "か\u3099く");
 }

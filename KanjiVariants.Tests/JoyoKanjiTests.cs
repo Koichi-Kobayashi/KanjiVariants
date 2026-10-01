@@ -110,6 +110,36 @@ public sealed class JoyoKanjiTests
     public void IsReadingSupported_UsesNormalizedExactMatch(string character, string reading, bool expected) =>
         Assert.Equal(expected, JoyoKanji.IsReadingSupported(character, reading));
 
+    [Theory]
+    [InlineData("がく", true)]
+    [InlineData("ガク", true)]
+    [InlineData("か\u3099く", true)]
+    [InlineData("カ\u3099ク", true)]
+    [InlineData("がク", true)]
+    [InlineData("か\u3099くい", false)]
+    public void ReadingQueries_NfcAndKanaVariants_PreserveExactMatch(string reading, bool expected)
+    {
+        Assert.Equal(expected, JoyoKanji.IsReadingSupported("学", reading));
+        Assert.Equal(expected, JoyoKanji.FindByReading(reading).Any(x => x.Character.ToString() == "学"));
+        var education = JoyoKanjiEducation.GetReading("学", reading);
+        Assert.Equal(expected, education is not null);
+        if (expected)
+            Assert.Equal("ガク", education!.Reading.Reading);
+    }
+
+    [Fact]
+    public void ReadingQueries_InvalidUtf16_StillThrowsArgumentException()
+    {
+        // テストケースの転送時に不正な符号単位が置換されないよう、実行時に作ります。
+        foreach (char surrogate in new[] { '\uD800', '\uDC00' })
+        {
+            string reading = new string(surrogate, 1);
+            Assert.Throws<ArgumentException>(() => JoyoKanji.FindByReading(reading));
+            Assert.Throws<ArgumentException>(() => JoyoKanji.IsReadingSupported("学", reading));
+            Assert.Throws<ArgumentException>(() => JoyoKanjiEducation.GetReading("学", reading));
+        }
+    }
+
     [Fact]
     public void KanjiCharacterOverloads_UseTheSameEntry()
     {
