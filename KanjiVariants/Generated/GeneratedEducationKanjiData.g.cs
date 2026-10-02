@@ -148,7 +148,7 @@ internal static class GeneratedEducationKanjiData
 
     private static class GradeLists
     {
-        // 一覧は原典の掲載順で一度だけ構築し、読み取り専用として共有します。
+        // 一覧はTXTの転記順で一度だけ構築し、読み取り専用として共有します。
         internal static readonly IReadOnlyList<KanjiCharacter>[] Items = new IReadOnlyList<KanjiCharacter>[]
         {
             Array.AsReadOnly(new KanjiCharacter[]

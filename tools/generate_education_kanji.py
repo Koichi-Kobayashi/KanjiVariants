@@ -80,7 +80,7 @@ def generate(grades: dict[int, list[str]]) -> str:
     for start in range(0, len(sorted_entries), 24):
         lines.append("        " + ", ".join(str(grade) for _, grade in sorted_entries[start:start + 24]) + ",")
     lines.extend(["    };", "", "    internal static IReadOnlyList<KanjiCharacter> GetByGrade(int grade) => GradeLists.Items[grade - 1];",
-                  "", "    private static class GradeLists", "    {", "        // 一覧は原典の掲載順で一度だけ構築し、読み取り専用として共有します。",
+                  "", "    private static class GradeLists", "    {", "        // 一覧はTXTの転記順で一度だけ構築し、読み取り専用として共有します。",
                   "        internal static readonly IReadOnlyList<KanjiCharacter>[] Items = new IReadOnlyList<KanjiCharacter>[]", "        {"])
     for grade in EXPECTED:
         lines.append("            Array.AsReadOnly(new KanjiCharacter[]")

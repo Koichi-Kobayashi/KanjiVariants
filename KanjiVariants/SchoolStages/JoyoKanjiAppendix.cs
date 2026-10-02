@@ -92,6 +92,7 @@ public static class JoyoKanjiAppendix
 
     /// <summary>語表記をNFCで正規化し、完全一致で付表を検索します。</summary>
     /// <exception cref="ArgumentNullException">word が null の場合。</exception>
+    /// <exception cref="ArgumentException">word が不正なUTF-16でNFC正規化できない場合。</exception>
     public static IReadOnlyList<JoyoKanjiAppendixEntry> FindByWord(string word)
     {
         ArgumentNullException.ThrowIfNull(word);
@@ -101,6 +102,7 @@ public static class JoyoKanjiAppendix
 
     /// <summary>読みの仮名種別の差を吸収し、完全一致で付表を検索します。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
+    /// <exception cref="ArgumentException">reading が不正なUTF-16で正規化できない場合。</exception>
     public static IReadOnlyList<JoyoKanjiAppendixEntry> FindByReading(string reading)
     {
         ArgumentNullException.ThrowIfNull(reading);

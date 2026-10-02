@@ -27,7 +27,7 @@ public static class EducationKanji
     public static KanjiGrade? GetGrade(string? character) =>
         KanjiCharacter.TryParse(character, out var parsed) ? GetGrade(parsed) : null;
 
-    /// <summary>指定学年の漢字を原典の掲載順に返します。同じ読み取り専用一覧を共有します。</summary>
+    /// <summary>指定学年の漢字をTXTの転記順に返します。同じ読み取り専用一覧を共有します。</summary>
     /// <exception cref="ArgumentOutOfRangeException">未定義の学年の場合。</exception>
     public static IReadOnlyList<KanjiCharacter> GetByGrade(KanjiGrade grade)
     {

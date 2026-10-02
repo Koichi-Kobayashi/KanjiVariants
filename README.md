@@ -4,6 +4,20 @@ MJ縮退マップに基づく異体字・代替文字の検索・置換と、JIS
 
 異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
 
+## インストール
+
+NuGetパッケージは `net6.0` 向けです。.NET 6以降のアプリケーションで利用できます。
+
+```bash
+dotnet add package KanjiVariants --version 1.0.0
+```
+
+プロジェクトファイルに直接指定する場合は、`ItemGroup` 内へ追加してください。
+
+```xml
+<PackageReference Include="KanjiVariants" Version="1.0.0" />
+```
+
 ## 対応する CharacterSet
 
 ### `CharacterSet.JisX0208`
@@ -258,7 +272,7 @@ Console.WriteLine(result.IsJinmeiyoKanji);
 
 ## 一意な変換先の一覧
 
-MJ縮退マップの一意な変換表から作成した一覧を [`data/MJ/MJUniqueAlternatives.1.2.0.csv`](data/MJ/MJUniqueAlternatives.1.2.0.csv) としてリポジトリで公開しています。
+MJ縮退マップの一意な変換表から作成した一覧を [`data/MJ/MJUniqueAlternatives.1.2.0.csv`](https://github.com/Koichi-Kobayashi/KanjiVariants/blob/main/data/MJ/MJUniqueAlternatives.1.2.0.csv) としてリポジトリで公開しています。
 同じUnicode表現が複数行に現れる場合があります。MJ文字図形名で区別される字形ごとに変換先が異なることがあるためです。この一覧は特定の文字集合への収録可否で絞り込んでいません。変換先のUCSと、データに記録がある場合はJIS X 0213の面区点位置を掲載しています。
 
 ## 文字列処理のルール
@@ -316,7 +330,7 @@ dotnet tool restore
 dotnet docfx docs/docfx.json
 ```
 
-HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port 8080` でローカル閲覧できます。詳細は[生成・閲覧方法](docs/articles/building-docs.md)、入口は[ドキュメントトップ](docs/index.md)を参照してください。
+HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port 8080` でローカル閲覧できます。詳細は[生成・閲覧方法](https://koichi-kobayashi.github.io/KanjiVariants/articles/building-docs.html)、入口は[ドキュメントトップ](https://koichi-kobayashi.github.io/KanjiVariants/)を参照してください。
 
 JIS X 0212データは固定した `data/JIS/jisx-212.ucm` と `data/Unicode/Unihan_OtherMappings.18.0.0.txt` から `python tools/generate_jis_x0212.py` で再生成し、`--check` で一致を確認できます。通常の生成・ビルドはネットワークへアクセスしません。取得だけを更新する場合は `python tools/fetch_jis_x0212.py` を明示的に実行します。固定原典のSHA-256、全件数、Unicode scalar・区点の妥当性と一意性、漢字部分の一致を検証します。
 
@@ -358,7 +372,7 @@ JIS X 0212データは固定した `data/JIS/jisx-212.ucm` と `data/Unicode/Uni
 
 ### 日本語IVSの閲覧用一覧
 
-[`data/Unicode/Japanese_IVS_2026-08-03.xlsx`](data/Unicode/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) からMoji_Joho、Adobe-Japan1、Hanyo-DenshiのCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
+[`data/Unicode/Japanese_IVS_2026-08-03.xlsx`](https://github.com/Koichi-Kobayashi/KanjiVariants/blob/main/data/Unicode/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) からMoji_Joho、Adobe-Japan1、Hanyo-DenshiのCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
 
 IPAmj明朝の配布元は、同フォントのIVS実装が2017-12-12版のMoji_Johoコレクションに準拠すると説明しています。そのため、Adobe-Japan1やHanyo-Denshiのシーケンス、または後のIVDで追加されたシーケンスでは、Excel上で指定された字形が表示されるとは限りません。見た目が同じでもVariation Selectorがないとは判断せず、符号位置を確認してください。
 

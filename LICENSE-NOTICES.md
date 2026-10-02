@@ -46,11 +46,57 @@ SOFTWARE.
 
 `data/Joyo/JoyoKanjiOnkunIndex.html` と `GeneratedJoyoKanjiData.g.cs` の文字・音訓・語例・備考は、[文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)をもとに、KanjiVariants用に加工して作成しています。原典HTMLを固定保存し、表の行・音訓・語例を抽出、空行や改行による続き行を整理して、KanjiVariants用の検索表に加工しています。備考は原文の字単位の情報として保持します。文化庁サイトに適用される[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
 
-`data/Education/EducationKanjiGradeTable.pdf`、その転記 `data/Education/EducationKanjiGradeTable.txt`、`GeneratedEducationKanjiData.g.cs` の文字と学年は、[文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)をもとに、KanjiVariants用に加工して作成しています。画像の表を転記し、掲載順を保持した学年別一覧とUnicode順の検索表に加工しています。[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
+`data/Education/EducationKanjiGradeTable.pdf`、その転記 `data/Education/EducationKanjiGradeTable.txt`、`GeneratedEducationKanjiData.g.cs` の文字と学年は、[文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)をもとに、KanjiVariants用に加工して作成しています。画像の表を転記し、TXTの転記順を保持した学年別一覧とUnicode順の検索表に加工しています。原典PDFの掲載順との一字単位の完全一致は保証していません。[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
 
 `data/Joyo/JoyoKanjiSchoolStages2017.pdf` と `GeneratedJoyoKanjiEducationData.g.cs` の音訓別学校段階、1字下げ情報、付表1・付表2の語は、[文部科学省「音訓の小・中・高等学校段階別割り振り表（平成29年3月）」](https://www.mext.go.jp/a_menu/shotou/new-cs/1385768.htm)の[原典PDF](https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2017/05/15/1385768.pdf)をもとに、KanjiVariants用に加工して作成しています。固定PDFの文字と座標を抽出し、既存の常用漢字・学年データと照合して検索表へ再構成しています。[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
 
 `data/Okurigana/` の公式HTMLと `GeneratedOkuriganaData.g.cs` の掲載語・許容表記・注記は、[文化庁「送り仮名の付け方」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html)をもとに、KanjiVariants用に加工・再構成しています。通則1～7と付表のHTMLを固定保存し、本文の見出しと語例を解析して本則・例外・許容・付表別の検索データへ整理しています。読み・構成関係・《　》の原典表記等は注記に分離しています。文化庁サイトに適用される[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
+
+## Unicodeデータの通知
+
+Unicode IVD、Unicode Standardized Variants、Unihanに由来するデータについて、[Unicode公式利用条件](https://www.unicode.org/copyright.html)および[Unicode License V3](https://www.unicode.org/license.txt)の著作権・許諾通知を以下に収録します。独自プログラムコードのMIT Licenseとは区別します。固定版ICU対応表の通知は次の節に保持しています。
+
+```text
+UNICODE LICENSE V3
+
+COPYRIGHT AND PERMISSION NOTICE
+
+Copyright © 1991-2026 Unicode, Inc.
+
+NOTICE TO USER: Carefully read the following legal agreement. BY
+DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING DATA FILES, AND/OR
+SOFTWARE, YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
+TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT
+DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE THE DATA FILES OR SOFTWARE.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of data files and any associated documentation (the "Data Files") or
+software and any associated documentation (the "Software") to deal in the
+Data Files or Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, and/or sell
+copies of the Data Files or Software, and to permit persons to whom the
+Data Files or Software are furnished to do so, provided that either (a)
+this copyright and permission notice appear with all copies of the Data
+Files or Software, or (b) this copyright and permission notice appear in
+associated Documentation.
+
+THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+THIRD PARTY RIGHTS.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA
+FILES OR SOFTWARE.
+
+Except as contained in this notice, the name of a copyright holder shall
+not be used in advertising or otherwise to promote the sale, use or other
+dealings in these Data Files or Software without prior written
+authorization of the copyright holder.
+```
 
 ## JIS X 0212対応表
 

@@ -69,6 +69,7 @@ public static class JoyoKanjiEducation
 
     /// <summary>漢字と正規化後の読みが完全一致する音訓を返します。見つからなければ null です。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
+    /// <exception cref="ArgumentException">character が Variation Selector を伴わず、reading が不正なUTF-16で正規化できない場合。</exception>
     public static KanjiReadingEducation? GetReading(KanjiCharacter character, string reading)
     {
         ArgumentNullException.ThrowIfNull(reading);
@@ -79,6 +80,7 @@ public static class JoyoKanjiEducation
 
     /// <summary>文字列で指定した漢字と読みを検索します。無効な文字列なら null です。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
+    /// <exception cref="ArgumentException">character を漢字として解析でき、Variation Selector を伴わず、reading が不正なUTF-16で正規化できない場合。</exception>
     public static KanjiReadingEducation? GetReading(string? character, string reading)
     {
         ArgumentNullException.ThrowIfNull(reading);
@@ -87,17 +89,20 @@ public static class JoyoKanjiEducation
 
     /// <summary>漢字と読みが一致した場合、その指導段階を返します。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
+    /// <exception cref="ArgumentException">character が Variation Selector を伴わず、reading が不正なUTF-16で正規化できない場合。</exception>
     public static SchoolStage? GetReadingStage(KanjiCharacter character, string reading) =>
         GetReading(character, reading)?.Stage;
 
     /// <summary>文字列で指定した漢字と読みの指導段階を返します。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
+    /// <exception cref="ArgumentException">character を漢字として解析でき、Variation Selector を伴わず、reading が不正なUTF-16で正規化できない場合。</exception>
     public static SchoolStage? GetReadingStage(string? character, string reading) =>
         GetReading(character, reading)?.Stage;
 
     /// <summary>指定した音訓の指導段階が stage と一致するか調べます。</summary>
     /// <exception cref="ArgumentOutOfRangeException">stage が未定義値の場合。</exception>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
+    /// <exception cref="ArgumentException">character が Variation Selector を伴わず、reading が不正なUTF-16で正規化できない場合。</exception>
     public static bool IsReadingAssigned(KanjiCharacter character, string reading, SchoolStage stage)
     {
         ValidateStage(stage);
@@ -107,6 +112,7 @@ public static class JoyoKanjiEducation
     /// <summary>文字列で指定した漢字の音訓の指導段階を調べます。</summary>
     /// <exception cref="ArgumentOutOfRangeException">stage が未定義値の場合。</exception>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
+    /// <exception cref="ArgumentException">character を漢字として解析でき、Variation Selector を伴わず、reading が不正なUTF-16で正規化できない場合。</exception>
     public static bool IsReadingAssigned(string? character, string reading, SchoolStage stage)
     {
         ValidateStage(stage);
