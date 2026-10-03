@@ -5,7 +5,8 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using KanjiVariants;
 
-BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+if (!MjBaselineProbe.TryRun(args))
+    BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
 
 [MemoryDiagnoser]
 public class LookupBenchmarks
