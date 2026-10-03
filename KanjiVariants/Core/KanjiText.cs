@@ -108,11 +108,21 @@ public static class KanjiText
         baseCp = rune.Value;
         offset += consumed;
         // 直後の VS も同じ単位に含め、未登録の組み合わせを基底文字だけで置換しないようにします。
-        if (offset < text.Length && Rune.DecodeFromUtf16(text.AsSpan(offset), out var next, out int nextLength) == OperationStatus.Done &&
-            Lookup.IsVariationSelector(next.Value))
+        if (offset < text.Length)
         {
-            selectorCp = next.Value;
-            offset += nextLength;
+            char next = text[offset];
+            if (next is >= '\uFE00' and <= '\uFE0F')
+            {
+                selectorCp = next;
+                offset++;
+            }
+            else if (next == '\uDB40' && offset + 1 < text.Length &&
+                text[offset + 1] is >= '\uDD00' and <= '\uDDEF')
+            {
+                // DB40 + DD00 は U+E0100。VS範囲を確認した場合だけ二符号単位を取り込みます。
+                selectorCp = 0xE0100 + text[offset + 1] - '\uDD00';
+                offset += 2;
+            }
         }
         return true;
     }
