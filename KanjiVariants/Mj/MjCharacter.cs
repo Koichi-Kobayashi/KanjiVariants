@@ -12,49 +12,24 @@ public static class MjCharacter
     private static readonly IReadOnlyList<MjCharacterMatch> Empty = Array.Empty<MjCharacterMatch>();
     private static readonly IReadOnlyList<KanjiCharacter> EmptySequences = Array.Empty<KanjiCharacter>();
 
-    // 初回利用時に一度だけ構築します。名前・各Unicode表現から同じEntryを共有します。
-    private static class Data
+    // Entryは一度だけ解析し、両索引から同じインスタンスを参照します。
+    private static class EntriesData
     {
-        internal static readonly Dictionary<string, MjCharacterEntry> Names = new(StringComparer.Ordinal);
-        internal static readonly Dictionary<ulong, IReadOnlyList<MjCharacterMatch>> Matches = Build();
+        internal static readonly MjCharacterEntry[] Entries = Build();
 
-        private static Dictionary<ulong, IReadOnlyList<MjCharacterMatch>> Build()
+        // beforefieldinitを避け、この基盤が必要になった時点でだけ初期化します。
+        static EntriesData() { }
+
+        private static MjCharacterEntry[] Build()
         {
-            var index = new Dictionary<ulong, Dictionary<string, MjCharacterMatch>>();
+            var entries = new List<MjCharacterEntry>();
             foreach (string part in GeneratedMjCharacterData.Parts)
             {
                 var rows = new Segments(part.AsSpan(), '\n');
                 while (rows.HasNext)
-                {
-                    var entry = ParseEntry(rows.Read());
-                    Names.Add(entry.MjGlyphName, entry);
-                    AddScalar(entry.CorrespondingUcs, MjCharacterMatchKind.CorrespondingUcs);
-                    AddScalar(entry.ImplementedUcs, MjCharacterMatchKind.ImplementedUcs);
-                    AddSequences(entry.Ivs, MjCharacterMatchKind.Ivs);
-                    AddSequences(entry.Svs, MjCharacterMatchKind.Svs);
-                    AddScalar(entry.CompatibilityIdeograph, MjCharacterMatchKind.CompatibilityIdeograph);
-
-                    void AddScalar(Rune? value, MjCharacterMatchKind kind)
-                    {
-                        if (value is Rune rune) Add(Lookup.CreateKey(rune.Value, 0), kind);
-                    }
-                    void AddSequences(IReadOnlyList<KanjiCharacter> values, MjCharacterMatchKind kind)
-                    {
-                        foreach (var character in values)
-                            Add(Lookup.CreateKey(character.BaseCharacter.Value, character.VariationSelector!.Value.Value), kind);
-                    }
-                    void Add(ulong key, MjCharacterMatchKind kind)
-                    {
-                        if (!index.TryGetValue(key, out var entries))
-                            index.Add(key, entries = new Dictionary<string, MjCharacterMatch>(StringComparer.Ordinal));
-                        // 対応UCSと実装UCS等が同じでも、Entryを増やさず一致理由を統合します。
-                        if (entries.TryGetValue(entry.MjGlyphName, out var previous)) kind |= previous.MatchKind;
-                        entries[entry.MjGlyphName] = new MjCharacterMatch(entry, kind);
-                    }
-                }
+                    entries.Add(ParseEntry(rows.Read()));
             }
-            return index.ToDictionary(pair => pair.Key,
-                pair => (IReadOnlyList<MjCharacterMatch>)Array.AsReadOnly(pair.Value.Values.ToArray()));
+            return entries.ToArray();
         }
 
         private static MjCharacterEntry ParseEntry(ReadOnlySpan<char> row)
@@ -139,14 +114,67 @@ public static class MjCharacter
         }
     }
 
+    // 名前検索だけではUnicode索引を構築しません。完成した辞書だけを公開します。
+    private static class NameData
+    {
+        internal static readonly Dictionary<string, MjCharacterEntry> Names = Build();
+        static NameData() { }
+
+        private static Dictionary<string, MjCharacterEntry> Build()
+        {
+            var names = new Dictionary<string, MjCharacterEntry>(StringComparer.Ordinal);
+            foreach (var entry in EntriesData.Entries)
+                names.Add(entry.MjGlyphName, entry);
+            return names;
+        }
+    }
+
+    // Unicode検索は共有Entryから索引を作り、Namesには依存しません。
+    private static class UnicodeData
+    {
+        internal static readonly Dictionary<ulong, IReadOnlyList<MjCharacterMatch>> Matches = Build();
+        static UnicodeData() { }
+
+        private static Dictionary<ulong, IReadOnlyList<MjCharacterMatch>> Build()
+        {
+            var index = new Dictionary<ulong, Dictionary<string, MjCharacterMatch>>();
+            foreach (var entry in EntriesData.Entries)
+            {
+                AddScalar(entry.CorrespondingUcs, MjCharacterMatchKind.CorrespondingUcs);
+                AddScalar(entry.ImplementedUcs, MjCharacterMatchKind.ImplementedUcs);
+                AddSequences(entry.Ivs, MjCharacterMatchKind.Ivs);
+                AddSequences(entry.Svs, MjCharacterMatchKind.Svs);
+                AddScalar(entry.CompatibilityIdeograph, MjCharacterMatchKind.CompatibilityIdeograph);
+
+                void AddScalar(Rune? value, MjCharacterMatchKind kind)
+                {
+                    if (value is Rune rune) Add(Lookup.CreateKey(rune.Value, 0), kind);
+                }
+                void AddSequences(IReadOnlyList<KanjiCharacter> values, MjCharacterMatchKind kind)
+                {
+                    foreach (var character in values)
+                        Add(Lookup.CreateKey(character.BaseCharacter.Value, character.VariationSelector!.Value.Value), kind);
+                }
+                void Add(ulong key, MjCharacterMatchKind kind)
+                {
+                    if (!index.TryGetValue(key, out var entries))
+                        index.Add(key, entries = new Dictionary<string, MjCharacterMatch>(StringComparer.Ordinal));
+                    // 対応UCSと実装UCS等が同じでも、Entryを増やさず一致理由を統合します。
+                    if (entries.TryGetValue(entry.MjGlyphName, out var previous)) kind |= previous.MatchKind;
+                    entries[entry.MjGlyphName] = new MjCharacterMatch(entry, kind);
+                }
+            }
+            return index.ToDictionary(pair => pair.Key,
+                pair => (IReadOnlyList<MjCharacterMatch>)Array.AsReadOnly(pair.Value.Values.ToArray()));
+        }
+    }
+
     /// <summary>MJ文字図形名の完全一致で一意に取得します。該当なしはnullです。</summary>
     /// <exception cref="ArgumentNullException">mjGlyphNameがnullです。</exception>
     public static MjCharacterEntry? GetByMjGlyphName(string mjGlyphName)
     {
         ArgumentNullException.ThrowIfNull(mjGlyphName);
-        // Matchesの初期化を先に完了させ、空のNamesを参照しないようにします。
-        _ = Data.Matches;
-        return Data.Names.TryGetValue(mjGlyphName, out var entry) ? entry : null;
+        return NameData.Names.TryGetValue(mjGlyphName, out var entry) ? entry : null;
     }
 
     /// <summary>Unicode表現に関連するMJ文字情報と一致理由を、共有の読み取り専用一覧で返します。複数件の場合があります。IVS/SVSは自動縮退しません。</summary>
@@ -166,5 +194,5 @@ public static class MjCharacter
     }
 
     private static IReadOnlyList<MjCharacterMatch> FindKey(ulong key) =>
-        Data.Matches.TryGetValue(key, out var matches) ? matches : Empty;
+        UnicodeData.Matches.TryGetValue(key, out var matches) ? matches : Empty;
 }
