@@ -305,6 +305,10 @@ dotnet build KanjiVariants.slnx -c Release
 dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release
 ```
 
+ユニットテストは、生成済みデータとライブラリのAPI・検索結果の整合性を検証します。ただし、原典から固定データへの転記が全件正しいことを、ユニットテストだけで保証するものではありません。
+
+KanjiVariantsでは、ユニットテストに加えて、Generatorのテスト、生成済みファイルとGenerator出力の一致確認、および代表的な原典値を固定したテストを組み合わせて検証しています。これらのGenerator検証はGitHub Actionsでも実行します。
+
 ユニットテストにはxUnitを使用しています（`xunit.v3.mtp-off` 4.0.0）。MJ等の生成データを更新するには、Python 3 で `python tools/generate.py` を実行します。常用漢字データは固定した `data/Joyo/JoyoKanjiOnkunIndex.html` から `python tools/generate_joyo.py` で再生成できます。原典の取得を更新する場合だけ `python tools/fetch_joyo.py` を明示的に実行します。実行時のネットワーク接続は不要です。
 
 MJ文字情報API用データは固定した `data/MJ/mji.00602.xlsx` から `python tools/generate_mj_character.py` で再生成し、`python tools/generate_mj_character.py --check` で生成済みデータとの一致を確認できます。実行時にExcelやネットワーク接続は必要ありません。
