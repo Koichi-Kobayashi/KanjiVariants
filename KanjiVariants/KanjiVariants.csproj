@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="KanjiVariants.Benchmarks" />
+    <InternalsVisibleTo Include="KanjiVariants.Tests" />
   </ItemGroup>
 
   <ItemGroup>
