@@ -15,6 +15,19 @@ internal enum CharacterSetFlags : byte
 
 internal static class Lookup
 {
+    // 呼び出し元の引数検証とsupported判定の後に使い、実際に選ぶ変換先だけを返します。
+    // 元の一意変換先も返すことで、診断側で検索を繰り返さず理由を説明できます。
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    internal static int ResolveAlternative(int baseCp, int? selectorCp, CharacterSet characterSet,
+        KanjiFallbackOptions options, out int uniqueTarget)
+    {
+        int entry = FindEntry(baseCp, selectorCp);
+        uniqueTarget = entry < 0 ? 0 : GeneratedData.UniqueAlternatives[entry];
+        if (uniqueTarget != 0 && IsSupported(uniqueTarget, characterSet))
+            return uniqueTarget;
+        return CanFallbackToBase(baseCp, selectorCp, characterSet, options) ? baseCp : 0;
+    }
+
     internal static bool IsSupported(int codePoint, CharacterSet characterSet)
     {
         // 通常のコードポイントだけに付けた所属bitを参照し、各公開文字集合を共通の規則で判定します。

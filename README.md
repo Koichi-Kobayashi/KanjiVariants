@@ -247,6 +247,27 @@ Console.WriteLine(result.IsJinmeiyoKanji);
 
 `UnicodeScalarCount` はスカラー数、`Utf16CodeUnitCount` はUTF-16コード単位数です。音訓配当とMJ一致情報は既存APIの読み取り専用一覧を共有します。文字列入力は `KanjiCharacter.Parse` と同じく、漢字一文字または登録済みIVS/SVSだけを受理します。nullは `ArgumentNullException`、空文字・複数文字・未登録VSなどは `FormatException` です。代替候補は含まないため、必要な場合は `Kanji.GetAlternatives` を別途使用してください。
 
+### 文字列全体の診断
+
+`KanjiDiagnostics.AnalyzeText` は、文字列全体について指定した `CharacterSet` への適合性と、`KanjiText.Replace` が実際に採用する置換先を文字単位で確認できます。
+
+```csharp
+var result = KanjiDiagnostics.AnalyzeText(
+    "A髙橋①",
+    CharacterSet.JisX0208);
+
+Console.WriteLine(result.IsSupported); // false
+
+foreach (var item in result.Items)
+{
+    Console.WriteLine(
+        $"{item.Utf16Index}: {item.Original} " +
+        $"Supported={item.IsSupported}, " +
+        $"Replacement={item.Replacement}, " +
+        $"Reason={item.Reason}");
+}
+```
+
 ## API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
@@ -256,7 +277,8 @@ Console.WriteLine(result.IsJinmeiyoKanji);
 | `Kanji.IsSupported` | 漢字表現そのものが指定された `CharacterSet` に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
 | `KanjiText.IsSupported` | 文字列全体を指定された `CharacterSet` で検証 | 任意の文字列 |
-| `KanjiDiagnostics` | 一つの漢字表現についてUnicode・JIS・常用/教育/人名用・音訓配当・MJ情報をまとめて取得 | 漢字一文字、または登録済みIVS/SVS |
+| `KanjiDiagnostics.Analyze` | 一つの漢字表現についてUnicode・JIS・常用/教育/人名用・音訓配当・MJ情報をまとめて取得 | 漢字一文字、または登録済みIVS/SVS |
+| `KanjiDiagnostics.AnalyzeText` | 文字列全体について文字集合への適合性・置換先・判定理由・UTF-16位置を取得 | 任意の文字列 |
 | `MjCharacter` | MJ文字図形名・Unicode・IVS/SVS・JIS X 0213・漢字施策等のMJ文字情報を参照 | MJ文字図形名、Unicodeスカラー一文字、または登録済みIVS/SVS |
 | `JoyoKanji` | 常用漢字表の本表字、旧字体等、音訓、語例、備考を参照 | 常用漢字表の本表字一文字 |
 | `JoyoReading` | 本表字と読みの組み合わせが常用漢字表に掲載されているか、表外読みかを判定 | 本表字一文字と読み。読みの正誤判定はしない |

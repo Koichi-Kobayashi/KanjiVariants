@@ -3,10 +3,69 @@
 
 namespace KanjiVariants;
 
-/// <summary>一つの漢字表現について、既存APIのUnicode・文字集合・漢字表・MJ情報をまとめます。</summary>
-/// <remarks>登録済みIVS/SVSを基底文字へ縮退せず、各APIと同じ表現を診断します。</remarks>
+/// <summary>一つの漢字表現の詳細情報と、文字列全体の文字集合適合性・置換判断を診断します。</summary>
+/// <remarks>Analyzeは元の漢字表現の情報を集約します。AnalyzeTextは元の文字列を保持し、指定条件での置換先を示します。</remarks>
 public static class KanjiDiagnostics
 {
+    /// <summary>文字列全体を既存のKanjiTextと同じ論理単位・判定規則で診断します。</summary>
+    /// <param name="text">元の入力文字列。コピーや正規化を行いません。</param>
+    /// <param name="characterSet">所属と置換先を確認する文字集合。</param>
+    /// <param name="options">登録済みVSの基底文字へのフォールバック設定。</param>
+    /// <returns>置換前の適合性と、実際にReplaceが採用する置換先を含む診断結果。</returns>
+    /// <remarks>不正UTF-16は例外ではなく診断項目として返します。CRとLFは別の単位です。候補一覧や各漢字表の詳細情報は取得しません。</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/>がnullの場合。</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="characterSet"/>が未定義の場合、または<paramref name="options"/>に未定義bitが含まれる場合。</exception>
+    public static KanjiTextDiagnosticResult AnalyzeText(string text, CharacterSet characterSet,
+        KanjiFallbackOptions options = KanjiFallbackOptions.None)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        Lookup.Validate(characterSet);
+        Lookup.Validate(options);
+        if (text.Length == 0)
+            return new KanjiTextDiagnosticResult(text, characterSet, options, true,
+                Array.Empty<KanjiTextDiagnosticItem>());
+
+        var items = new List<KanjiTextDiagnosticItem>();
+        bool allSupported = true;
+        int offset = 0;
+        while (offset < text.Length)
+        {
+            int start = offset;
+            bool valid = KanjiText.TryReadUnit(text, ref offset, out int baseCp, out int? selectorCp);
+            string original = text.Substring(start, offset - start);
+            string? replacement = null;
+            KanjiDiagnosticReason reason;
+            if (!valid)
+                reason = KanjiDiagnosticReason.InvalidUtf16;
+            // 既存hot pathの条件式を変えず、診断側から同じAPIを再利用します。
+            // Originalとして保持する文字列をそのまま判定にも再利用し、
+            // 判定専用の追加文字列は生成しません。
+            else if (KanjiText.IsSupported(original, characterSet))
+                reason = KanjiDiagnosticReason.Supported;
+            else
+            {
+                int target = Lookup.ResolveAlternative(baseCp, selectorCp, characterSet, options, out int uniqueTarget);
+                if (target != 0 && (selectorCp is not null || target != baseCp))
+                {
+                    replacement = new System.Text.Rune(target).ToString();
+                    reason = target == uniqueTarget ? KanjiDiagnosticReason.MjUniqueMappingAvailable
+                        : KanjiDiagnosticReason.VariationSelectorFallbackAvailable;
+                }
+                // 単独のVSは基底文字として分類しません。連続VSでもreaderの区切りを維持します。
+                else if (selectorCp is int selector && !Lookup.IsVariationSelector(baseCp) &&
+                    !Lookup.IsRegisteredVariation(baseCp, selector))
+                    reason = KanjiDiagnosticReason.UnregisteredVariationSequence;
+                else if (uniqueTarget != 0)
+                    reason = KanjiDiagnosticReason.UniqueAlternativeNotInTargetCharacterSet;
+                else
+                    reason = KanjiDiagnosticReason.NoReplacement;
+            }
+            allSupported &= reason == KanjiDiagnosticReason.Supported;
+            items.Add(new KanjiTextDiagnosticItem(original, start, replacement, reason));
+        }
+        return new KanjiTextDiagnosticResult(text, characterSet, options, allSupported, items.AsReadOnly());
+    }
+
     /// <summary>解析済みの漢字表現を、そのまま診断します。</summary>
     /// <param name="character">診断する漢字一文字または登録済みIVS/SVS。</param>
     /// <returns>既存APIの結果を集約した診断結果。</returns>

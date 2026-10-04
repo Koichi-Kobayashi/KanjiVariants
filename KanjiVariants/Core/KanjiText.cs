@@ -45,13 +45,7 @@ public static class KanjiText
                 builder?.Append(text, start, offset - start);
                 continue;
             }
-            int entry = Lookup.FindEntry(baseCp, selectorCp);
-            int target = entry < 0 ? 0 : GeneratedData.UniqueAlternatives[entry];
-            if (target == 0 || !Lookup.IsSupported(target, characterSet))
-            {
-                // 公式の一意な変換先を使えないときだけ、許可された登録済みシーケンスの基底文字を試します。
-                target = Lookup.CanFallbackToBase(baseCp, selectorCp, characterSet, options) ? baseCp : 0;
-            }
+            int target = Lookup.ResolveAlternative(baseCp, selectorCp, characterSet, options, out _);
             if (target != 0 && (selectorCp is not null || target != baseCp))
             {
                 // 最初の置換位置までを一度だけコピーし、以降の文字を順に追記します。
@@ -94,7 +88,7 @@ public static class KanjiText
         return true;
     }
 
-    private static bool TryReadUnit(string text, ref int offset, out int baseCp, out int? selectorCp)
+    internal static bool TryReadUnit(string text, ref int offset, out int baseCp, out int? selectorCp)
     {
         selectorCp = null;
         var status = Rune.DecodeFromUtf16(text.AsSpan(offset), out var rune, out int consumed);
