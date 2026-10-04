@@ -9,13 +9,13 @@ MJ縮退マップに基づく異体字・代替文字の検索・置換と、JIS
 NuGetパッケージは `net6.0` 向けです。.NET 6以降のアプリケーションで利用できます。
 
 ```bash
-dotnet add package KanjiVariants --version 1.0.1
+dotnet add package KanjiVariants --version 1.1.0
 ```
 
 プロジェクトファイルに直接指定する場合は、`ItemGroup` 内へ追加してください。
 
 ```xml
-<PackageReference Include="KanjiVariants" Version="1.0.1" />
+<PackageReference Include="KanjiVariants" Version="1.1.0" />
 ```
 
 ## 対応する CharacterSet

@@ -10,7 +10,11 @@
     <PackageProjectUrl>https://koichi-kobayashi.github.io/KanjiVariants/</PackageProjectUrl>
     <PackageTitle>KanjiVariants</PackageTitle>
     <PackageTags>kanji;japanese;unicode;jis;jisx0208;jisx0212;jisx0213;ivs;svs;mj;joyo;jinmeiyo;okurigana;onkun;education;grade;dotnet</PackageTags>
-    <PackageReleaseNotes>初回リリース。</PackageReleaseNotes>
+    <PackageReleaseNotes>
+    - KanjiDiagnostics.AnalyzeText を追加
+    - 文字列全体の適合性・置換先・判定理由・UTF-16位置を診断可能に
+    - 回帰テストを追加
+    </PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE-NOTICES.md</PackageLicenseFile>
     <Copyright>Copyright (c) 2026 Koichi Kobayashi</Copyright>
