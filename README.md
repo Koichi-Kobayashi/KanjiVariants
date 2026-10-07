@@ -138,6 +138,30 @@ var onOnly = JoyoKanji.FindByReading("こう", KanjiReadingType.On);
 
 `OldForm` は併記が1字のときだけ設定されます。「弁」のように複数ある場合は `OldForm == null` で、すべての候補を `OldForms` から参照できます。角括弧による字形注記を含む原典の文字欄は `SourceLabel` に保持します。備考欄は字単位の情報なので、各 `KanjiReading.Note` に同じ原文を入れています。どの音訓だけに適用されるかは推定していません。
 
+### 常用漢字の文章診断
+
+`JoyoKanjiDiagnostics.AnalyzeText` は、文章中の漢字が常用漢字表の本表字そのものかを診断します。
+
+```csharp
+var result = JoyoKanjiDiagnostics.AnalyzeText(
+    "明日は髙橋さんと會議です。");
+Console.WriteLine(result.ContainsOnlyJoyoKanji); // false
+foreach (var item in result.NonJoyoItems)
+{
+    Console.WriteLine($"{item.Utf16Index}: {item.Original} Reason={item.Reason}");
+}
+// 3: 髙 Reason=NotJoyoKanji
+// 8: 會 Reason=NotJoyoKanji
+```
+
+`Items` は入力全体を論理単位順に保持し、`NonJoyoItems` は `NotJoyoKanji` の項目だけを入力順に返します。両方とも読み取り専用で、同じ項目を共有します。`Text` は入力stringそのものです。項目の `IsJoyoKanji` は本表字だけtrueで、かな・英数字・記号・絵文字・`々`・`〆`・`〻` などは `NotKanji` として保持し、文章全体の違反扱いにはしません。
+
+旧字体・異体字・互換漢字は自動変換・正規化せず、MJ縮退マップも自動利用しません。漢字と直後のVSは登録有無によらず一項目で、IVS/SVSを基底文字へ自動フォールバックせず `NotJoyoKanji` とします。必要な異体字変換は利用者側で明示的に行ってから診断してください。
+
+論理単位はUnicodeの書記素クラスタではなく、補助文字を含む1スカラーと直後のVSをまとめた単位です。`Utf16Index` は0始まりのUTF-16コード単位位置、`Utf16Length` はその長さです。CRとLFは別項目で、不正UTF-16は1コード単位ずつ `InvalidUtf16` として元の内容と位置を保持し、`NonJoyoItems` には含めません。
+
+`HasNonJoyoKanji` は `NotJoyoKanji`、`HasInvalidUtf16` は `InvalidUtf16` を一つでも含む場合にtrueです。`ContainsOnlyJoyoKanji` は全項目が `JoyoKanji` または `NotKanji` の場合だけtrueで、空文字もtrueです。不正UTF-16だけでもfalseとなります。null入力は `ArgumentNullException` です。
+
 ## 表外読み
 
 `JoyoReading` は、既存の常用漢字表の音訓データを使って、漢字と読みの組み合わせの掲載有無を判定します。`IsListedReading()` は本表字と掲載音訓の組み合わせなら `true`、`IsHyogaiReading()` は漢字が本表字であり、その読みが掲載音訓に含まれなければ `true` です。漢字自体が非常用漢字の場合は、どちらも `false` になります。
@@ -339,6 +363,7 @@ foreach (var item in result.Items)
 | `KanjiDiagnostics.AnalyzeText` | 文字列全体について文字集合への適合性・置換先・判定理由・UTF-16位置を取得 | 任意の文字列 |
 | `MjCharacter` | MJ文字図形名・Unicode・IVS/SVS・JIS X 0213・漢字施策等のMJ文字情報を参照 | MJ文字図形名、Unicodeスカラー一文字、または登録済みIVS/SVS |
 | `JoyoKanji` | 常用漢字表の本表字、旧字体等、音訓、語例、備考を参照 | 常用漢字表の本表字一文字 |
+| `JoyoKanjiDiagnostics` | 文章中の漢字が常用漢字表の本表字かを診断し、本表字でない漢字表現・不正UTF-16を位置付きで取得 | 任意の文字列 |
 | `JoyoReading` | 本表字と読みの組み合わせが常用漢字表に掲載されているか、表外読みかを判定 | 本表字一文字と読み。読みの正誤判定はしない |
 | `JinmeiyoKanji` | 人名用漢字863字の判定と、常用漢字を含めた名前に使用可能な漢字の判定 | 漢字一文字。IVS/SVS付き表現は対象外 |
 | `EducationKanji` | 小学校の学年別漢字配当表を参照し、配当学年を取得 | 配当表に掲載された漢字一文字 |
