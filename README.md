@@ -216,6 +216,23 @@ foreach (var item in result.UnlearnedItems)
 
 null入力は `ArgumentNullException`、未定義の対象学年は `ArgumentOutOfRangeException` です。対象学年は第1～第6学年から指定します。
 
+### 教育漢字チェックCLI（サンプル・ツール）
+
+`KanjiVariants.Cli` は、既存の教育漢字診断APIを使って `.txt` ファイル全体をチェックする.NET 10のコンソールアプリです。NuGet Toolとしては公開していません。リポジトリから次のように実行できます。
+
+```powershell
+dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3
+dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3 --unique
+dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3 --json
+dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3 --unique --json
+```
+
+コマンドは `check <file.txt> --grade <1-6> [--unique] [--json]` です。通常出力は英語です。`--unique` は文字表現・配当学年・理由が同じ未習漢字を出現順にまとめ、件数を表示します。`--json` は標準出力にJSONだけを出力します。最高配当学年は教育漢字部分だけから計算し、教育漢字がなければ通常出力では `-`、JSONではnullです。
+
+JSONの共通項目は `targetGrade`、`highestEducationKanjiGrade`（学年は1～6またはnull）、`hasNonEducationKanji`、`containsOnlyLearnedKanji`、`hasInvalidUtf16`、`unlearned` です。未習項目には `text`、`grade`、`reason`、`utf16Index`、`utf16Length` を含みます。`--unique --json` では位置・長さの代わりに `firstUtf16Index` と `count` を返します。位置と長さは0始まりのUTF-16コード単位に基づきます。
+
+入力はBOMあり／なしのUTF-8だけに対応し、改行を保持します。正規化・文字置換・他の文字コードの自動判別は行いません。不正UTF-8は置換文字で補わず読込エラーとします。終了コードは **0：未習漢字なし、1：未習漢字あり、2：使用方法・読込・入力異常** です。不正UTF-16を検出した場合は未習漢字の有無より優先して2を返し、診断JSONの `hasInvalidUtf16` がtrueになります（strict UTF-8のファイル読込では通常、この状態になる前に読込エラーになります）。使用方法や読込のエラーは標準エラー出力へ表示し、JSONを含め標準出力には何も出しません。
+
 ## 常用漢字の音訓と学校段階
 
 `JoyoKanjiEducation` は、文部科学省「音訓の小・中・高等学校段階別割り振り表（平成29年3月）」に基づき、常用漢字の音訓ごとの指導段階を `Elementary`・`JuniorHigh`・`HighSchool` で返します。各音訓の `Reading` は既存の `JoyoKanji` の `KanjiReading` と同じインスタンスです。同じ漢字でも読みごとに段階が異なり、漢字単位の小学校配当学年は `EducationKanji.GetGrade()` で別に調べます。この割り振りは指導の目安であり、学校での取扱いを制限するものではありません。

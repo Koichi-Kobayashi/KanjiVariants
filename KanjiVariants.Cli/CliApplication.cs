@@ -1,0 +1,41 @@
+// Copyright (c) 2026 Koichi Kobayashi
+// Licensed under the MIT License.
+
+using System.Text;
+
+namespace KanjiVariants.Cli;
+
+internal static class CliApplication
+{
+    internal static int Run(string[] args, TextWriter output, TextWriter error)
+    {
+        CliOptions options;
+        try
+        {
+            options = CliOptions.Parse(args);
+        }
+        catch (ArgumentException ex)
+        {
+            error.WriteLine($"Error: {ex.Message}");
+            error.WriteLine(CliOptions.Usage);
+            return 2;
+        }
+
+        string text;
+        try
+        {
+            text = Utf8TextInput.Read(options.File);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            // DecoderFallbackExceptionもArgumentExceptionとして読込エラーに含めます。
+            error.WriteLine(ex is DecoderFallbackException ? "Error: Input is not valid UTF-8."
+                : $"Error: Could not read file: {ex.Message}");
+            return 2;
+        }
+
+        var check = TextCheck.Analyze(text, options.Grade);
+        CheckOutput.Write(check, options.Unique, options.Json, output);
+        return check.ExitCode;
+    }
+}

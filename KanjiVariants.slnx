@@ -1,4 +1,6 @@
 <Solution>
   <Project Path="KanjiVariants/KanjiVariants.csproj" />
   <Project Path="KanjiVariants.Tests/KanjiVariants.Tests.csproj" />
+  <Project Path="KanjiVariants.Cli/KanjiVariants.Cli.csproj" />
+  <Project Path="KanjiVariants.Cli.Tests/KanjiVariants.Cli.Tests.csproj" />
 </Solution>
