@@ -12,6 +12,57 @@ public sealed class EducationKanjiDiagnosticsTests
         KanjiGrade.Grade3, KanjiGrade.Grade4, KanjiGrade.Grade5, KanjiGrade.Grade6 };
 
     [Theory]
+    [InlineData("", null, false)]
+    [InlineData("あいうえお", null, false)]
+    [InlineData("日学校", KanjiGrade.Grade1, false)]
+    [InlineData("学高漢茨囲", KanjiGrade.Grade5, false)]
+    [InlineData("囲茨漢高学", KanjiGrade.Grade5, false)]
+    [InlineData("日胃", KanjiGrade.Grade6, false)]
+    [InlineData("学校催", KanjiGrade.Grade1, true)]
+    [InlineData("催議日", KanjiGrade.Grade4, true)]
+    [InlineData("催髙𠮷", null, true)]
+    [InlineData("学\U000E0100", null, true)]
+    [InlineData("不\uFE00", null, true)]
+    [InlineData("学\U000E0100日", KanjiGrade.Grade1, true)]
+    public void AnalyzeText_GradeSummary_ReturnsHighestEducationGradeRegardlessOfTargetGrade(
+        string text, KanjiGrade? highestEducationKanjiGrade, bool hasNonEducationKanji)
+    {
+        foreach (var targetGrade in Grades)
+        {
+            var result = EducationKanjiDiagnostics.AnalyzeText(text, targetGrade);
+            Assert.Equal(highestEducationKanjiGrade, result.HighestEducationKanjiGrade);
+            Assert.Equal(hasNonEducationKanji, result.HasNonEducationKanji);
+            AssertConsistent(text, targetGrade);
+        }
+    }
+
+    [Fact]
+    public void AnalyzeText_InvalidUtf16Only_DoesNotContributeToGradeSummary()
+    {
+        string text = new(new[] { '\uD800', '\uD800' });
+        var result = EducationKanjiDiagnostics.AnalyzeText(text, KanjiGrade.Grade6);
+        Assert.All(result.Items, item => Assert.Equal(EducationKanjiDiagnosticReason.InvalidUtf16, item.Reason));
+        Assert.Null(result.HighestEducationKanjiGrade);
+        Assert.False(result.HasNonEducationKanji);
+        Assert.False(result.ContainsOnlyLearnedKanji);
+        AssertConsistent(text, KanjiGrade.Grade6);
+    }
+
+    [Fact]
+    public void AnalyzeText_All1026EducationKanji_HighestEducationKanjiGradeIsGrade6WithoutNonEducationKanji()
+    {
+        string text = string.Concat(Grades.SelectMany(EducationKanji.GetByGrade).Select(x => x.ToString()));
+        foreach (var targetGrade in Grades)
+        {
+            var result = EducationKanjiDiagnostics.AnalyzeText(text, targetGrade);
+            Assert.Equal(1026, result.Items.Count);
+            Assert.Equal(KanjiGrade.Grade6, result.HighestEducationKanjiGrade);
+            Assert.False(result.HasNonEducationKanji);
+            AssertConsistent(text, targetGrade);
+        }
+    }
+
+    [Theory]
     [InlineData("学", KanjiGrade.Grade1)]
     [InlineData("高", KanjiGrade.Grade2)]
     [InlineData("漢", KanjiGrade.Grade3)]
@@ -172,6 +223,8 @@ public sealed class EducationKanjiDiagnosticsTests
         Assert.Empty(result.Items);
         Assert.Empty(result.UnlearnedItems);
         Assert.Same(result.Items, result.UnlearnedItems);
+        Assert.Null(result.HighestEducationKanjiGrade);
+        Assert.False(result.HasNonEducationKanji);
     }
 
     [Fact]
@@ -213,6 +266,8 @@ public sealed class EducationKanjiDiagnosticsTests
             {
                 var result = EducationKanjiDiagnostics.AnalyzeText(text, Grades[targetOrder]);
                 Assert.Equal(characters.Count, result.Items.Count);
+                Assert.Equal(Grades[sourceOrder], result.HighestEducationKanjiGrade);
+                Assert.False(result.HasNonEducationKanji);
                 Assert.All(result.Items, item =>
                 {
                     Assert.Equal(Grades[sourceOrder], item.Grade);
@@ -234,6 +289,14 @@ public sealed class EducationKanjiDiagnosticsTests
         var unlearned = result.Items.Where(x => x.Reason is EducationKanjiDiagnosticReason.LearnedInLaterGrade
             or EducationKanjiDiagnosticReason.NotEducationKanji).ToArray();
         Assert.Equal(unlearned, result.UnlearnedItems);
+        Assert.Equal(result.Items.Any(x => x.Reason == EducationKanjiDiagnosticReason.NotEducationKanji),
+            result.HasNonEducationKanji);
+        // enum値ではなく明示した学年順を使い、全項目から求めた最高学年と集計値を照合します。
+        KanjiGrade? highestEducationKanjiGrade = null;
+        foreach (var grade in Grades)
+            if (result.Items.Any(x => x.Grade == grade))
+                highestEducationKanjiGrade = grade;
+        Assert.Equal(highestEducationKanjiGrade, result.HighestEducationKanjiGrade);
         int offset = 0;
         foreach (var item in result.Items)
         {

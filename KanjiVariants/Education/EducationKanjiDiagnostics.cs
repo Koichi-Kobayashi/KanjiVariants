@@ -20,12 +20,15 @@ public static class EducationKanjiDiagnostics
         if (text.Length == 0)
         {
             var empty = Array.Empty<EducationKanjiTextDiagnosticItem>();
-            return new EducationKanjiTextDiagnosticResult(text, targetGrade, true, empty, empty);
+            return new EducationKanjiTextDiagnosticResult(text, targetGrade, true, empty, empty, null, false);
         }
 
         var items = new List<EducationKanjiTextDiagnosticItem>();
         List<EducationKanjiTextDiagnosticItem>? unlearned = null;
         bool allLearned = true;
+        KanjiGrade? highestEducationKanjiGrade = null;
+        int highestEducationKanjiGradeOrder = 0;
+        bool hasNonEducationKanji = false;
         int offset = 0;
         while (offset < text.Length)
         {
@@ -43,9 +46,23 @@ public static class EducationKanjiDiagnostics
                 // VSは削除せず、配当表の文字そのものだけを既存APIで照合します。
                 if (selectorCp is null)
                     grade = EducationKanji.GetGrade(KanjiCharacter.FromScalar(baseCp));
-                reason = grade is null ? EducationKanjiDiagnosticReason.NotEducationKanji
-                    : GetGradeOrder(grade.Value) <= targetOrder ? EducationKanjiDiagnosticReason.Learned
-                    : EducationKanjiDiagnosticReason.LearnedInLaterGrade;
+                if (grade is null)
+                {
+                    reason = EducationKanjiDiagnosticReason.NotEducationKanji;
+                    hasNonEducationKanji = true;
+                }
+                else
+                {
+                    int gradeOrder = GetGradeOrder(grade.Value);
+                    reason = gradeOrder <= targetOrder ? EducationKanjiDiagnosticReason.Learned
+                        : EducationKanjiDiagnosticReason.LearnedInLaterGrade;
+                    // 対象学年や配当表外漢字の有無によらず、実際の配当学年を同じ走査で集計します。
+                    if (gradeOrder > highestEducationKanjiGradeOrder)
+                    {
+                        highestEducationKanjiGradeOrder = gradeOrder;
+                        highestEducationKanjiGrade = grade;
+                    }
+                }
             }
             var item = new EducationKanjiTextDiagnosticItem(text.Substring(start, offset - start), start, grade, reason);
             items.Add(item);
@@ -55,7 +72,8 @@ public static class EducationKanjiDiagnostics
                 (unlearned ??= new List<EducationKanjiTextDiagnosticItem>()).Add(item);
         }
         return new EducationKanjiTextDiagnosticResult(text, targetGrade, allLearned, items.AsReadOnly(),
-            unlearned is null ? Array.Empty<EducationKanjiTextDiagnosticItem>() : unlearned.AsReadOnly());
+            unlearned is null ? Array.Empty<EducationKanjiTextDiagnosticItem>() : unlearned.AsReadOnly(),
+            highestEducationKanjiGrade, hasNonEducationKanji);
     }
 
     // enumの数値が変わっても、学年の順序と入力検証を維持します。

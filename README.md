@@ -183,6 +183,8 @@ var firstGrade = EducationKanji.GetByGrade(KanjiGrade.Grade1); // 80字
 var result = EducationKanjiDiagnostics.AnalyzeText(
     "明日は会議を開催します。", KanjiGrade.Grade3);
 Console.WriteLine(result.ContainsOnlyLearnedKanji); // false
+Console.WriteLine(result.HighestEducationKanjiGrade?.ToString() ?? "-"); // Grade4
+Console.WriteLine(result.HasNonEducationKanji); // true（催が配当表外）
 
 foreach (var item in result.UnlearnedItems)
 {
@@ -196,6 +198,17 @@ foreach (var item in result.UnlearnedItems)
 `Items` は入力全体を論理単位ごとに保持します。ここでいう論理単位はUnicodeの書記素クラスタではなく、補助文字を含む1スカラーと、その直後にある場合のVariation Selectorをまとめた単位です。補助文字は一項目、基底文字と直後のVSも登録有無によらず一項目です。CRとLFは別項目です。不正UTF-16は1コード単位ごとに扱います。
 
 `UnlearnedItems` は後の学年で習う漢字と配当表外の漢字だけを入力順に返します。`Items` と `UnlearnedItems` は両方とも読み取り専用です。`Grade` は実際の配当学年、`Utf16Index` は0始まりのUTF-16コード単位位置、`Utf16Length` はその長さです。
+
+`HighestEducationKanjiGrade` は、文章中で教育漢字として判定できた項目の最高配当学年です。指定した対象学年とは独立しており、配当表外漢字が混ざっていても教育漢字部分の最高学年を返します。教育漢字が一文字もなければnullです。漢字以外、不正UTF-16、`NotEducationKanji` の項目は計算対象外です。この値だけでは、文章全体がその学年までの教育漢字で構成されていることを保証しません。
+
+`HasNonEducationKanji` は、`Reason` が `NotEducationKanji` の項目を一つでも含む場合にtrueです。漢字のVS付き表現も含みますが、漢字以外や不正UTF-16だけではtrueになりません。
+
+| 入力 | HighestEducationKanjiGrade | HasNonEducationKanji |
+|---|---|---|
+| `あいうえお`・空文字 | null | false |
+| `学校` | Grade1 | false |
+| `学校催` | Grade1 | true |
+| `催` | null | true |
 
 旧字体・異体字・互換漢字・IVS/SVSを自動変換しません。漢字のVS付き表現は基底文字が教育漢字でも `NotEducationKanji` で、`Grade` はnullです。変換したい場合は、利用側で明示的に `KanjiText.Replace` などを使ってから診断してください。
 
