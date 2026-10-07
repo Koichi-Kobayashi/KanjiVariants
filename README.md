@@ -175,6 +175,34 @@ var firstGrade = EducationKanji.GetByGrade(KanjiGrade.Grade1); // 80字
 
 配当表の文字そのものだけを判定します。旧字体、異体字、IVS/SVS付きの表現は対象外です。`EducationKanji` は `JoyoKanji` や異体字変換と自動的に結合しません。変換が必要な場合は、利用者側で `Kanji.TryGetAlternative(...)` などと明示的に組み合わせてください。
 
+### 教育漢字の文章診断
+
+`EducationKanjiDiagnostics.AnalyzeText` は、指定した小学学年までに習う漢字で文章が構成されているかを診断します。字幕、ゲーム内テキスト、教材、ローカライズチェックなどから利用できます。
+
+```csharp
+var result = EducationKanjiDiagnostics.AnalyzeText(
+    "明日は会議を開催します。", KanjiGrade.Grade3);
+Console.WriteLine(result.ContainsOnlyLearnedKanji); // false
+
+foreach (var item in result.UnlearnedItems)
+{
+    Console.WriteLine($"{item.Utf16Index}: {item.Original} " +
+        $"Grade={item.Grade?.ToString() ?? "-"}, Reason={item.Reason}");
+}
+// 4: 議 Grade=Grade4, Reason=LearnedInLaterGrade
+// 7: 催 Grade=-, Reason=NotEducationKanji
+```
+
+`Items` は入力全体を論理単位ごとに保持します。ここでいう論理単位はUnicodeの書記素クラスタではなく、補助文字を含む1スカラーと、その直後にある場合のVariation Selectorをまとめた単位です。補助文字は一項目、基底文字と直後のVSも登録有無によらず一項目です。CRとLFは別項目です。不正UTF-16は1コード単位ごとに扱います。
+
+`UnlearnedItems` は後の学年で習う漢字と配当表外の漢字だけを入力順に返します。`Items` と `UnlearnedItems` は両方とも読み取り専用です。`Grade` は実際の配当学年、`Utf16Index` は0始まりのUTF-16コード単位位置、`Utf16Length` はその長さです。
+
+旧字体・異体字・互換漢字・IVS/SVSを自動変換しません。漢字のVS付き表現は基底文字が教育漢字でも `NotEducationKanji` で、`Grade` はnullです。変換したい場合は、利用側で明示的に `KanjiText.Replace` などを使ってから診断してください。
+
+漢字以外（`々`・`〆`・`〻`、かな、英数字、記号、絵文字など）は `NotKanji` で、`IsLearned` はtrueです。不正UTF-16は `InvalidUtf16` として位置付きで残し、`IsLearned` はfalseですが、`UnlearnedItems` には含めません。`ContainsOnlyLearnedKanji` は全項目が `NotKanji` または `Learned` ならtrueで、空文字もtrueです。個人の習得状況や読みの難しさを判定するものではありません。
+
+null入力は `ArgumentNullException`、未定義の対象学年は `ArgumentOutOfRangeException` です。対象学年は第1～第6学年から指定します。
+
 ## 常用漢字の音訓と学校段階
 
 `JoyoKanjiEducation` は、文部科学省「音訓の小・中・高等学校段階別割り振り表（平成29年3月）」に基づき、常用漢字の音訓ごとの指導段階を `Elementary`・`JuniorHigh`・`HighSchool` で返します。各音訓の `Reading` は既存の `JoyoKanji` の `KanjiReading` と同じインスタンスです。同じ漢字でも読みごとに段階が異なり、漢字単位の小学校配当学年は `EducationKanji.GetGrade()` で別に調べます。この割り振りは指導の目安であり、学校での取扱いを制限するものではありません。
@@ -284,6 +312,7 @@ foreach (var item in result.Items)
 | `JoyoReading` | 本表字と読みの組み合わせが常用漢字表に掲載されているか、表外読みかを判定 | 本表字一文字と読み。読みの正誤判定はしない |
 | `JinmeiyoKanji` | 人名用漢字863字の判定と、常用漢字を含めた名前に使用可能な漢字の判定 | 漢字一文字。IVS/SVS付き表現は対象外 |
 | `EducationKanji` | 小学校の学年別漢字配当表を参照し、配当学年を取得 | 配当表に掲載された漢字一文字 |
+| `EducationKanjiDiagnostics` | 指定小学学年までに習う漢字で文章が構成されているかを位置付きで診断 | 任意の文字列（不正UTF-16も診断項目として保持） |
 | `JoyoKanjiEducation` | 常用漢字の各音訓について、小学校・中学校・高等学校の指導段階を参照 | 常用漢字表の本表字一文字 |
 | `JoyoKanjiAppendix` | 常用漢字表の付表語や都道府県名の特別な読みを、語単位で検索 | 語または読み |
 | `Okurigana` | 文化庁「送り仮名の付け方」の公式掲載語・本則・例外・許容・付表を参照 | 公式掲載語または同じ項目の許容表記。未掲載語の正誤判定はしない |
