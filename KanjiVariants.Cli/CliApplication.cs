@@ -34,7 +34,14 @@ internal static class CliApplication
             return 2;
         }
 
-        var check = TextCheck.Analyze(text, options.Grade);
+        if (options.Command == CliCommand.Joyo)
+        {
+            var joyo = JoyoTextCheck.Analyze(text);
+            JoyoCheckOutput.Write(joyo, options.Unique, options.Json, output);
+            return joyo.ExitCode;
+        }
+
+        var check = TextCheck.Analyze(text, options.Grade!.Value);
         CheckOutput.Write(check, options.Unique, options.Json, output);
         return check.ExitCode;
     }

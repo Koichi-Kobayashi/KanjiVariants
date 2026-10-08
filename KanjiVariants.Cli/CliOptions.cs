@@ -3,14 +3,23 @@
 
 namespace KanjiVariants.Cli;
 
-internal sealed record CliOptions(string File, KanjiGrade Grade, bool Unique, bool Json)
+internal enum CliCommand { Check, Joyo }
+
+internal sealed record CliOptions(string File, KanjiGrade? Grade, bool Unique, bool Json, CliCommand Command)
 {
-    internal const string Usage = "Usage: kanjivariants check <file.txt> --grade <1-6> [--unique] [--json]";
+    internal const string Usage = "Usage: kanjivariants check <file.txt> --grade <1-6> [--unique] [--json]\n"
+        + "       kanjivariants joyo <file.txt> [--unique] [--json]";
 
     internal static CliOptions Parse(string[] args)
     {
-        if (args.Length == 0 || args[0] != "check")
-            throw new ArgumentException("Expected command 'check'.");
+        if (args.Length == 0)
+            throw new ArgumentException("Expected command 'check' or 'joyo'.");
+        var command = args[0] switch
+        {
+            "check" => CliCommand.Check,
+            "joyo" => CliCommand.Joyo,
+            _ => throw new ArgumentException("Expected command 'check' or 'joyo'."),
+        };
         if (args.Length < 2 || args[1].StartsWith("--", StringComparison.Ordinal))
             throw new ArgumentException("A text file is required.");
 
@@ -26,6 +35,8 @@ internal sealed record CliOptions(string File, KanjiGrade Grade, bool Unique, bo
             switch (option)
             {
                 case "--grade":
+                    if (command == CliCommand.Joyo)
+                        throw new ArgumentException("--grade is not supported by 'joyo'.");
                     if (++i >= args.Length)
                         throw new ArgumentException("--grade requires a value from 1 to 6.");
                     // 数値のキャストに依存せず、CLIの学年表記を既存enumへ対応付けます。
@@ -45,10 +56,10 @@ internal sealed record CliOptions(string File, KanjiGrade Grade, bool Unique, bo
                 default: throw new ArgumentException($"Unexpected argument: {option}");
             }
         }
-        if (grade is null)
+        if (command == CliCommand.Check && grade is null)
             throw new ArgumentException("--grade is required.");
         if (!string.Equals(Path.GetExtension(args[1]), ".txt", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Only .txt files are supported.");
-        return new CliOptions(args[1], grade.Value, unique, json);
+        return new CliOptions(args[1], grade, unique, json, command);
     }
 }

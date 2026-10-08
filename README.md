@@ -240,22 +240,31 @@ foreach (var item in result.UnlearnedItems)
 
 null入力は `ArgumentNullException`、未定義の対象学年は `ArgumentOutOfRangeException` です。対象学年は第1～第6学年から指定します。
 
-### 教育漢字チェックCLI（サンプル・ツール）
+### 文章診断CLI（サンプル・ツール）
 
-`KanjiVariants.Cli` は、既存の教育漢字診断APIを使って `.txt` ファイル全体をチェックする.NET 10のコンソールアプリです。NuGet Toolとしては公開していません。リポジトリから次のように実行できます。
+`KanjiVariants.Cli` は、既存の教育漢字・常用漢字診断APIを使って `.txt` ファイル全体をチェックする.NET 10のコンソールアプリです。NuGet Toolとしては公開していません。リポジトリから次のように実行できます。
 
 ```powershell
 dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3
 dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3 --unique
 dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3 --json
 dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3 --unique --json
+
+dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt
+dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt --unique
+dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt --json
+dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt --unique --json
 ```
 
-コマンドは `check <file.txt> --grade <1-6> [--unique] [--json]` です。通常出力は英語です。`--unique` は文字表現・配当学年・理由が同じ未習漢字を出現順にまとめ、件数を表示します。`--json` は標準出力にJSONだけを出力します。最高配当学年は教育漢字部分だけから計算し、教育漢字がなければ通常出力では `-`、JSONではnullです。
+`check <file.txt> --grade <1-6> [--unique] [--json]` は指定した小学学年までに習う漢字かを診断します。通常出力は英語です。`--unique` は文字表現・配当学年・理由が同じ未習漢字を出現順にまとめ、件数を表示します。`--json` は標準出力にJSONだけを出力します。最高配当学年は教育漢字部分だけから計算し、教育漢字がなければ通常出力では `-`、JSONではnullです。
 
-JSONの共通項目は `targetGrade`、`highestEducationKanjiGrade`（学年は1～6またはnull）、`hasNonEducationKanji`、`containsOnlyLearnedKanji`、`hasInvalidUtf16`、`unlearned` です。未習項目には `text`、`grade`、`reason`、`utf16Index`、`utf16Length` を含みます。`--unique --json` では位置・長さの代わりに `firstUtf16Index` と `count` を返します。位置と長さは0始まりのUTF-16コード単位に基づきます。
+`check` のJSON項目は `targetGrade`、`highestEducationKanjiGrade`（学年は1～6またはnull）、`hasNonEducationKanji`、`containsOnlyLearnedKanji`、`hasInvalidUtf16`、`unlearned` です。未習項目には `text`、`grade`、`reason`、`utf16Index`、`utf16Length` を含みます。`--unique --json` では位置・長さの代わりに `firstUtf16Index` と `count` を返します。位置と長さは0始まりのUTF-16コード単位に基づきます。
 
-入力はBOMあり／なしのUTF-8だけに対応し、改行を保持します。正規化・文字置換・他の文字コードの自動判別は行いません。不正UTF-8は置換文字で補わず読込エラーとします。終了コードは **0：未習漢字なし、1：未習漢字あり、2：使用方法・読込・入力異常** です。不正UTF-16を検出した場合は未習漢字の有無より優先して2を返し、診断JSONの `hasInvalidUtf16` がtrueになります（strict UTF-8のファイル読込では通常、この状態になる前に読込エラーになります）。使用方法や読込のエラーは標準エラー出力へ表示し、JSONを含め標準出力には何も出しません。
+`joyo <file.txt> [--unique] [--json]` は常用漢字表の本表字かを診断します。`--grade` は使用できません。旧字体・異体字・互換漢字を自動変換せず、IVS/SVSも基底文字へ変換しません。漢字以外は違反扱いしません。`--unique` は文字表現・理由で非常用漢字を集約し、最初の出現順を維持します。
+
+`joyo` のJSON項目は `containsOnlyJoyoKanji`、`hasNonJoyoKanji`、`hasInvalidUtf16`、`nonJoyo` です。非常用項目には `text`、`reason`、`utf16Index`、`utf16Length` を含み、集約時は位置・長さの代わりに `firstUtf16Index` と `count` を返します。終了コードは **0：非常用漢字なし、1：非常用漢字あり、2：使用方法・読込・入力異常** で、不正UTF-16がある場合は2を優先します。
+
+入力はBOMあり／なしのUTF-8だけに対応し、改行を保持します。正規化・文字置換・他の文字コードの自動判別は行いません。不正UTF-8は置換文字で補わず読込エラーとします。終了コードは **0：診断対象の問題なし、1：診断対象の問題あり、2：使用方法・読込・入力異常** です。コード1は、`check` では未習漢字あり、`joyo` では非常用漢字ありを表します。不正UTF-16を検出した場合は診断結果より優先して2を返し、診断JSONの `hasInvalidUtf16` がtrueになります（strict UTF-8のファイル読込では通常、この状態になる前に読込エラーになります）。使用方法や読込のエラーは標準エラー出力へ表示し、JSONを含め標準出力には何も出しません。
 
 ## 常用漢字の音訓と学校段階
 
