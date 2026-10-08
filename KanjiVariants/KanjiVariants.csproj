@@ -11,9 +11,15 @@
     <PackageTitle>KanjiVariants</PackageTitle>
     <PackageTags>kanji;japanese;unicode;jis;jisx0208;jisx0212;jisx0213;ivs;svs;mj;joyo;jinmeiyo;okurigana;onkun;education;grade;dotnet</PackageTags>
     <PackageReleaseNotes>
-    - KanjiDiagnostics.AnalyzeText を追加
-    - 文字列全体の適合性・置換先・判定理由・UTF-16位置を診断可能に
-    - 回帰テストを追加
+      - 教育漢字の文章診断API EducationKanjiDiagnostics.AnalyzeText を追加
+      - 未習漢字・配当表外漢字・最高配当学年・不正UTF-16の有無を取得可能に
+      - 常用漢字の文章診断API JoyoKanjiDiagnostics.AnalyzeText を追加
+      - 非常用漢字・判定理由・UTF-16位置を取得可能に
+      - .txt / .srt、重複集約、JSON出力に対応した文章診断CLIを追加（リポジトリ内の独立ツール）
+      - 文章診断のUnicode拡張J対応と拡張D境界判定を修正
+      - 公開APIのXMLコメント、README、API Referenceを補完
+      - 本体テスト566件、CLIテスト121件で検証
+      - ライブラリは引き続きnet6.0。既存1.1.0 APIとの互換性を維持
     </PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE-NOTICES.md</PackageLicenseFile>
