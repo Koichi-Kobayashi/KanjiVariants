@@ -14,6 +14,7 @@ public static class KanjiText
     /// <param name="characterSet">変換先として使用できる文字集合。</param>
     /// <param name="options">登録済み IVS/SVS の基底文字へフォールバックするかどうか。</param>
     /// <returns>置換後の文字列。置換がなければ入力と同じ string インスタンスです。</returns>
+    /// <remarks>元の表現が指定文字集合で使用可能なら維持します。使用可能なMJ一意変換先を優先し、指定されたオプションで許可された場合は登録済みIVS/SVSの基底文字へフォールバックします。置換できない表現と不正UTF-16は元のまま保持して処理を続けます。戻り値全体が指定文字集合で使用可能になることは保証しません。必要に応じて<see cref="IsSupported(string, CharacterSet)"/>で置換後の文字列を検証してください。</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> が null の場合。</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="characterSet"/> が未定義の値の場合。</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> に未定義の値が含まれる場合。</exception>
@@ -70,7 +71,7 @@ public static class KanjiText
     /// <summary>文字列の全ての文字が指定文字集合で使用可能かを判定します。</summary>
     /// <param name="text">検証する文字列。ASCII は使用可能として扱います。</param>
     /// <param name="characterSet">所属を確認する文字集合。</param>
-    /// <returns>全ての文字が使用可能なら true。未登録の IVS/SVS や不正な UTF-16 があれば false。</returns>
+    /// <returns>ASCII以外の全ての文字が指定文字集合に所属し、ASCIIを含む全体が使用可能ならtrue。登録済みIVS/SVSであってもVariation Sequenceそのものは使用不可でfalseです。未登録Variation Sequenceや不正UTF-16がある場合もfalseです。</returns>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> が null の場合。</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="characterSet"/> が未定義の値の場合。</exception>
     public static bool IsSupported(string text, CharacterSet characterSet)

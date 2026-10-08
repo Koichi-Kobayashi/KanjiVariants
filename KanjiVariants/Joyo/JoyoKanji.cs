@@ -37,24 +37,24 @@ public static class JoyoKanji
     /// <summary>Variation Selectorを伴わない本表字かを判定します。</summary>
     public static bool IsJoyo(KanjiCharacter character) => FindIndex(character) >= 0;
 
-    /// <summary>文字列が常用漢字表の本表字かを判定します。無効な文字列は false です。</summary>
+    /// <summary>文字列が常用漢字表の本表字かを判定します。null、空文字、解析できない文字列、IVS/SVSはfalseです。</summary>
     public static bool IsJoyo(string? character) => KanjiCharacter.TryParse(character, out var parsed) && IsJoyo(parsed);
 
-    /// <summary>本表字の情報を取得します。旧字体やIVS/SVSは対象外です。</summary>
+    /// <summary>本表字の情報を取得します。本表字でなければnullです。旧字体やIVS/SVSを本表字へ自動変換しません。</summary>
     public static JoyoKanjiEntry? Get(KanjiCharacter character)
     {
         int index = FindIndex(character);
         return index < 0 ? null : GeneratedJoyoKanjiData.Entries[index];
     }
 
-    /// <summary>文字列で指定した本表字の情報を取得します。無効な文字列は null です。</summary>
+    /// <summary>文字列で指定した本表字の情報を取得します。null、空文字、解析できない文字列、本表字以外、IVS/SVSはnullです。</summary>
     public static JoyoKanjiEntry? Get(string? character) =>
         KanjiCharacter.TryParse(character, out var parsed) ? Get(parsed) : null;
 
     /// <summary>本表字の音訓を取得します。対象外なら空の一覧です。</summary>
     public static IReadOnlyList<KanjiReading> GetReadings(KanjiCharacter character) => Get(character)?.Readings ?? EmptyReadings;
 
-    /// <summary>文字列で指定した本表字の音訓を取得します。</summary>
+    /// <summary>文字列で指定した本表字の音訓を取得します。null、空文字、解析できない文字列、本表字以外、IVS/SVSは空の読み取り専用一覧です。</summary>
     public static IReadOnlyList<KanjiReading> GetReadings(string? character) => Get(character)?.Readings ?? EmptyReadings;
 
     /// <summary>指定した音訓があるか、ひらがな・カタカナの差を吸収して完全一致で調べます。</summary>
@@ -73,7 +73,7 @@ public static class JoyoKanji
         return false;
     }
 
-    /// <summary>文字列で指定した字の音訓を調べます。無効な字は false です。</summary>
+    /// <summary>文字列で指定した字の音訓を調べます。characterがnull、空文字、解析できない文字列、本表字以外、IVS/SVSの場合はfalseです。readingがnullの場合はcharacterによらず例外です。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
     /// <exception cref="ArgumentException">対象の本表字について、reading が不正なUTF-16で正規化できない場合。</exception>
     public static bool IsReadingSupported(string? character, string reading)
@@ -82,7 +82,7 @@ public static class JoyoKanji
         return KanjiCharacter.TryParse(character, out var parsed) && IsReadingSupported(parsed, reading);
     }
 
-    /// <summary>音訓から本表字を完全一致で逆引きします。</summary>
+    /// <summary>音訓をNFCとひらがなへ正規化し、本表字を完全一致で逆引きします。該当なしは空の読み取り専用一覧です。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
     /// <exception cref="ArgumentException">reading が不正なUTF-16で正規化できない場合。</exception>
     public static IReadOnlyList<JoyoKanjiEntry> FindByReading(string reading)
@@ -91,7 +91,7 @@ public static class JoyoKanji
         return ReadingIndices.All.TryGetValue(ReadingNormalizer.Normalize(reading), out var entries) ? entries : EmptyEntries;
     }
 
-    /// <summary>音読みまたは訓読みに限定して本表字を逆引きします。</summary>
+    /// <summary>音訓をNFCとひらがなへ正規化し、音読みまたは訓読みに限定して本表字を逆引きします。該当なしは空の読み取り専用一覧です。</summary>
     /// <exception cref="ArgumentNullException">reading が null の場合。</exception>
     /// <exception cref="ArgumentException">reading が不正なUTF-16で正規化できない場合。</exception>
     /// <exception cref="ArgumentOutOfRangeException">type が未定義値の場合。</exception>

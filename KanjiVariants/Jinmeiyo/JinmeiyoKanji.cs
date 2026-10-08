@@ -15,7 +15,7 @@ public static class JinmeiyoKanji
         !character.HasVariationSelector &&
         Array.BinarySearch(GeneratedJinmeiyoKanjiData.CodePoints, character.BaseCharacter.Value) >= 0;
 
-    /// <summary>文字列が人名用漢字863字の一字かを判定します。無効な文字列やIVS/SVSは false です。</summary>
+    /// <summary>文字列が人名用漢字863字の一字かを判定します。null、空文字、解析できない文字列、IVS/SVSはfalseです。旧字体等を自動変換しません。</summary>
     public static bool IsJinmeiyoKanji(string? character) =>
         KanjiCharacter.TryParse(character, out var parsed) && IsJinmeiyoKanji(parsed);
 
@@ -26,7 +26,7 @@ public static class JinmeiyoKanji
     public static bool IsNameUsableKanji(KanjiCharacter character) =>
         JoyoKanji.IsJoyo(character) || IsJinmeiyoKanji(character);
 
-    /// <summary>文字列が常用漢字または人名用漢字の一字かを判定します。無効な文字列やIVS/SVSは false です。</summary>
+    /// <summary>文字列が常用漢字または人名用漢字の一字かを判定します。null、空文字、解析できない文字列、IVS/SVSはfalseです。旧字体等を自動変換しません。</summary>
     public static bool IsNameUsableKanji(string? character) =>
         KanjiCharacter.TryParse(character, out var parsed) && IsNameUsableKanji(parsed);
 }

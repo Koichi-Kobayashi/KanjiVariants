@@ -35,7 +35,7 @@ public static class JoyoKanjiDiagnostics
                 hasInvalidUtf16 = true;
             }
             // 教育漢字診断と同じく、踊り字等は漢字の判定対象から除きます。
-            else if (baseCp is 0x3005 or 0x3006 or 0x303B || !Lookup.IsRecognizedKanji(baseCp))
+            else if (!TextKanjiClassifier.IsKanji(baseCp))
                 reason = JoyoKanjiDiagnosticReason.NotKanji;
             else
                 reason = selectorCp is null && JoyoKanji.IsJoyo(KanjiCharacter.FromScalar(baseCp))

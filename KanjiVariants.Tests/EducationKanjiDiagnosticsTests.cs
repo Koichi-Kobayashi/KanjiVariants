@@ -12,6 +12,30 @@ public sealed class EducationKanjiDiagnosticsTests
         KanjiGrade.Grade3, KanjiGrade.Grade4, KanjiGrade.Grade5, KanjiGrade.Grade6 };
 
     [Theory]
+    [InlineData("", 0, false, false, 0)]
+    [InlineData("学校へ行く", 0, false, false, 0)]
+    [InlineData("議", 0, false, false, 1)]
+    [InlineData("催", 0, false, true, 1)]
+    [InlineData("", 0xD800, true, false, 0)]
+    [InlineData("", 0xDC00, true, false, 0)]
+    [InlineData("議", 0xD800, true, false, 1)]
+    [InlineData("催", 0xDC00, true, true, 1)]
+    public void AnalyzeText_InvalidUtf16Summary_IsIndependentOfUnlearnedAndNonEducationKanji(
+        string text, int invalidCodeUnit, bool hasInvalidUtf16, bool hasNonEducationKanji, int unlearnedCount)
+    {
+        // テストランナーによる文字列の直列化で不正UTF-16が置換されないよう、実行時に構築します。
+        if (invalidCodeUnit != 0) text = ((char)invalidCodeUnit).ToString() + text;
+        var result = EducationKanjiDiagnostics.AnalyzeText(text, KanjiGrade.Grade3);
+        Assert.Equal(hasInvalidUtf16, result.HasInvalidUtf16);
+        Assert.Equal(hasNonEducationKanji, result.HasNonEducationKanji);
+        Assert.Equal(unlearnedCount, result.UnlearnedItems.Count);
+        Assert.DoesNotContain(result.UnlearnedItems,
+            item => item.Reason == EducationKanjiDiagnosticReason.InvalidUtf16);
+        if (hasInvalidUtf16) Assert.False(result.ContainsOnlyLearnedKanji);
+        AssertConsistent(text, KanjiGrade.Grade3);
+    }
+
+    [Theory]
     [InlineData("", null, false)]
     [InlineData("あいうえお", null, false)]
     [InlineData("日学校", KanjiGrade.Grade1, false)]
@@ -286,6 +310,8 @@ public sealed class EducationKanjiDiagnosticsTests
         Assert.Equal(targetGrade, result.TargetGrade);
         Assert.Equal(text, string.Concat(result.Items.Select(x => x.Original)));
         Assert.Equal(result.Items.All(x => x.IsLearned), result.ContainsOnlyLearnedKanji);
+        Assert.Equal(result.Items.Any(x => x.Reason == EducationKanjiDiagnosticReason.InvalidUtf16),
+            result.HasInvalidUtf16);
         var unlearned = result.Items.Where(x => x.Reason is EducationKanjiDiagnosticReason.LearnedInLaterGrade
             or EducationKanjiDiagnosticReason.NotEducationKanji).ToArray();
         Assert.Equal(unlearned, result.UnlearnedItems);

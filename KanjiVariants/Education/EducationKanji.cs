@@ -9,7 +9,7 @@ public static class EducationKanji
     /// <summary>Variation Selectorを伴わない配当表の文字かを判定します。</summary>
     public static bool IsEducationKanji(KanjiCharacter character) => GetGrade(character) is not null;
 
-    /// <summary>文字列が配当表の一字かを判定します。無効な文字列は false です。</summary>
+    /// <summary>文字列が配当表の一字かを判定します。null、空文字、解析できない文字列、IVS/SVSはfalseです。</summary>
     public static bool IsEducationKanji(string? character) =>
         KanjiCharacter.TryParse(character, out var parsed) && IsEducationKanji(parsed);
 
@@ -23,7 +23,7 @@ public static class EducationKanji
         return index < 0 ? null : (KanjiGrade)GeneratedEducationKanjiData.Grades[index];
     }
 
-    /// <summary>文字列で指定した一字の配当学年を取得します。無効な文字列は null です。</summary>
+    /// <summary>文字列で指定した一字の配当学年を取得します。null、空文字、解析できない文字列、配当表外、IVS/SVSはnullです。旧字体等を自動変換しません。</summary>
     public static KanjiGrade? GetGrade(string? character) =>
         KanjiCharacter.TryParse(character, out var parsed) ? GetGrade(parsed) : null;
 

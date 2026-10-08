@@ -14,6 +14,9 @@ public型を機能別に参照できます。各型・メンバーの説明は�
 
 - <xref:KanjiVariants.KanjiDiagnostics>
 - <xref:KanjiVariants.KanjiDiagnosticResult>
+- <xref:KanjiVariants.KanjiTextDiagnosticResult>
+- <xref:KanjiVariants.KanjiTextDiagnosticItem>
+- <xref:KanjiVariants.KanjiDiagnosticReason>
 
 ## 常用漢字・表外読み
 
@@ -23,10 +26,24 @@ public型を機能別に参照できます。各型・メンバーの説明は�
 - <xref:KanjiVariants.KanjiReadingType>
 - <xref:KanjiVariants.JoyoReading>
 
+### 常用漢字文章診断
+
+- <xref:KanjiVariants.JoyoKanjiDiagnostics>
+- <xref:KanjiVariants.JoyoKanjiDiagnosticResult>
+- <xref:KanjiVariants.JoyoKanjiDiagnosticItem>
+- <xref:KanjiVariants.JoyoKanjiDiagnosticReason>
+
 ## 教育漢字
 
 - <xref:KanjiVariants.EducationKanji>
 - <xref:KanjiVariants.KanjiGrade>
+
+### 教育漢字文章診断
+
+- <xref:KanjiVariants.EducationKanjiDiagnostics>
+- <xref:KanjiVariants.EducationKanjiTextDiagnosticResult>
+- <xref:KanjiVariants.EducationKanjiTextDiagnosticItem>
+- <xref:KanjiVariants.EducationKanjiDiagnosticReason>
 
 ## 人名用漢字
 

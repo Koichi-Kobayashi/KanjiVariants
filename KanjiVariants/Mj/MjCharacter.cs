@@ -169,7 +169,7 @@ public static class MjCharacter
         }
     }
 
-    /// <summary>MJ文字図形名の完全一致で一意に取得します。該当なしはnullです。</summary>
+    /// <summary>MJ文字図形名を正規化せず完全一致で一意に取得します。空文字や該当なしはnullです。</summary>
     /// <exception cref="ArgumentNullException">mjGlyphNameがnullです。</exception>
     public static MjCharacterEntry? GetByMjGlyphName(string mjGlyphName)
     {
@@ -181,7 +181,7 @@ public static class MjCharacter
     public static IReadOnlyList<MjCharacterMatch> Find(KanjiCharacter character) =>
         FindKey(Lookup.CreateKey(character.BaseCharacter.Value, character.VariationSelector?.Value ?? 0));
 
-    /// <summary>Unicodeスカラー一文字または登録済みIVS/SVSを検索します。複数件の場合があります。無効な入力は空の一覧で、IVS/SVSは自動縮退しません。</summary>
+    /// <summary>Unicodeスカラー一文字または登録済みIVS/SVSを検索します。複数件の場合があります。空文字、複数文字、不正UTF-16、未登録Variation Sequenceや該当なしは空の読み取り専用一覧です。nullは例外で、IVS/SVSは自動縮退しません。</summary>
     /// <exception cref="ArgumentNullException">characterがnullです。</exception>
     public static IReadOnlyList<MjCharacterMatch> Find(string character)
     {

@@ -9,13 +9,13 @@ MJ縮退マップに基づく異体字・代替文字の検索・置換と、JIS
 NuGetパッケージは `net6.0` 向けです。.NET 6以降のアプリケーションで利用できます。
 
 ```bash
-dotnet add package KanjiVariants --version 1.1.0
+dotnet add package KanjiVariants --version 1.2.0
 ```
 
 プロジェクトファイルに直接指定する場合は、`ItemGroup` 内へ追加してください。
 
 ```xml
-<PackageReference Include="KanjiVariants" Version="1.1.0" />
+<PackageReference Include="KanjiVariants" Version="1.2.0" />
 ```
 
 ## 対応する CharacterSet
@@ -236,7 +236,7 @@ foreach (var item in result.UnlearnedItems)
 
 旧字体・異体字・互換漢字・IVS/SVSを自動変換しません。漢字のVS付き表現は基底文字が教育漢字でも `NotEducationKanji` で、`Grade` はnullです。変換したい場合は、利用側で明示的に `KanjiText.Replace` などを使ってから診断してください。
 
-漢字以外（`々`・`〆`・`〻`、かな、英数字、記号、絵文字など）は `NotKanji` で、`IsLearned` はtrueです。不正UTF-16は `InvalidUtf16` として位置付きで残し、`IsLearned` はfalseですが、`UnlearnedItems` には含めません。`ContainsOnlyLearnedKanji` は全項目が `NotKanji` または `Learned` ならtrueで、空文字もtrueです。個人の習得状況や読みの難しさを判定するものではありません。
+漢字以外（`々`・`〆`・`〻`、かな、英数字、記号、絵文字など）は `NotKanji` で、`IsLearned` はtrueです。不正UTF-16は `InvalidUtf16` として位置付きで残し、`IsLearned` はfalseですが、`UnlearnedItems` には含めません。`HasInvalidUtf16` は不正UTF-16が一つでもある場合にtrueとなり、`HasNonEducationKanji` とは独立した判定です。CLIのJSON項目 `hasInvalidUtf16` も同じ意味です。`ContainsOnlyLearnedKanji` は全項目が `NotKanji` または `Learned` ならtrueで、空文字もtrueです。個人の習得状況や読みの難しさを判定するものではありません。
 
 null入力は `ArgumentNullException`、未定義の対象学年は `ArgumentOutOfRangeException` です。対象学年は第1～第6学年から指定します。
 

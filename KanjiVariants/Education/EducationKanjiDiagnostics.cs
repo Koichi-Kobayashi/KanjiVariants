@@ -20,7 +20,7 @@ public static class EducationKanjiDiagnostics
         if (text.Length == 0)
         {
             var empty = Array.Empty<EducationKanjiTextDiagnosticItem>();
-            return new EducationKanjiTextDiagnosticResult(text, targetGrade, true, empty, empty, null, false);
+            return new EducationKanjiTextDiagnosticResult(text, targetGrade, true, empty, empty, null, false, false);
         }
 
         var items = new List<EducationKanjiTextDiagnosticItem>();
@@ -29,6 +29,7 @@ public static class EducationKanjiDiagnostics
         KanjiGrade? highestEducationKanjiGrade = null;
         int highestEducationKanjiGradeOrder = 0;
         bool hasNonEducationKanji = false;
+        bool hasInvalidUtf16 = false;
         int offset = 0;
         while (offset < text.Length)
         {
@@ -37,9 +38,12 @@ public static class EducationKanjiDiagnostics
             KanjiGrade? grade = null;
             EducationKanjiDiagnosticReason reason;
             if (!valid)
+            {
                 reason = EducationKanjiDiagnosticReason.InvalidUtf16;
+                hasInvalidUtf16 = true;
+            }
             // 踊り字等は、既存の漢字認識やMJ情報の有無によらず判定対象外です。
-            else if (baseCp is 0x3005 or 0x3006 or 0x303B || !Lookup.IsRecognizedKanji(baseCp))
+            else if (!TextKanjiClassifier.IsKanji(baseCp))
                 reason = EducationKanjiDiagnosticReason.NotKanji;
             else
             {
@@ -73,7 +77,7 @@ public static class EducationKanjiDiagnostics
         }
         return new EducationKanjiTextDiagnosticResult(text, targetGrade, allLearned, items.AsReadOnly(),
             unlearned is null ? Array.Empty<EducationKanjiTextDiagnosticItem>() : unlearned.AsReadOnly(),
-            highestEducationKanjiGrade, hasNonEducationKanji);
+            highestEducationKanjiGrade, hasNonEducationKanji, hasInvalidUtf16);
     }
 
     // enumの数値が変わっても、学年の順序と入力検証を維持します。

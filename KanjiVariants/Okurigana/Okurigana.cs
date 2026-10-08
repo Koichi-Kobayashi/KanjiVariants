@@ -55,6 +55,7 @@ public static class Okurigana
 
     /// <summary>公式掲載語または同じ項目の許容表記を、NFCで正規化して完全一致で検索します。該当なしは空一覧です。</summary>
     /// <exception cref="ArgumentNullException">word が null の場合。</exception>
+    /// <exception cref="ArgumentException">wordが不正なUTF-16を含み、NFC正規化できない場合。</exception>
     public static IReadOnlyList<OkuriganaEntry> Find(string word)
     {
         ArgumentNullException.ThrowIfNull(word);
