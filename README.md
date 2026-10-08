@@ -242,7 +242,7 @@ null入力は `ArgumentNullException`、未定義の対象学年は `ArgumentOut
 
 ### 文章診断CLI（サンプル・ツール）
 
-`KanjiVariants.Cli` は、既存の教育漢字・常用漢字診断APIを使って `.txt` ファイル全体をチェックする.NET 10のコンソールアプリです。NuGet Toolとしては公開していません。リポジトリから次のように実行できます。
+`KanjiVariants.Cli` は、既存の教育漢字・常用漢字診断APIを使って `.txt` ファイル全体、または `.srt` の字幕本文をチェックする.NET 10のコンソールアプリです。NuGet Toolとしては公開していません。リポジトリから次のように実行できます。
 
 ```powershell
 dotnet run --project KanjiVariants.Cli -c Release -- check sample.txt --grade 3
@@ -254,6 +254,8 @@ dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt
 dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt --unique
 dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt --json
 dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt --unique --json
+dotnet run --project KanjiVariants.Cli -c Release -- check subtitle.srt --grade 3
+dotnet run --project KanjiVariants.Cli -c Release -- joyo subtitle.srt --json
 ```
 
 `check <file.txt> --grade <1-6> [--unique] [--json]` は指定した小学学年までに習う漢字かを診断します。通常出力は英語です。`--unique` は文字表現・配当学年・理由が同じ未習漢字を出現順にまとめ、件数を表示します。`--json` は標準出力にJSONだけを出力します。最高配当学年は教育漢字部分だけから計算し、教育漢字がなければ通常出力では `-`、JSONではnullです。
@@ -265,6 +267,12 @@ dotnet run --project KanjiVariants.Cli -c Release -- joyo sample.txt --unique --
 `joyo` のJSON項目は `containsOnlyJoyoKanji`、`hasNonJoyoKanji`、`hasInvalidUtf16`、`nonJoyo` です。非常用項目には `text`、`reason`、`utf16Index`、`utf16Length` を含み、集約時は位置・長さの代わりに `firstUtf16Index` と `count` を返します。終了コードは **0：非常用漢字なし、1：非常用漢字あり、2：使用方法・読込・入力異常** で、不正UTF-16がある場合は2を優先します。
 
 入力はBOMあり／なしのUTF-8だけに対応し、改行を保持します。正規化・文字置換・他の文字コードの自動判別は行いません。不正UTF-8は置換文字で補わず読込エラーとします。終了コードは **0：診断対象の問題なし、1：診断対象の問題あり、2：使用方法・読込・入力異常** です。コード1は、`check` では未習漢字あり、`joyo` では非常用漢字ありを表します。不正UTF-16を検出した場合は診断結果より優先して2を返し、診断JSONの `hasInvalidUtf16` がtrueになります（strict UTF-8のファイル読込では通常、この状態になる前に読込エラーになります）。使用方法や読込のエラーは標準エラー出力へ表示し、JSONを含め標準出力には何も出しません。
+
+SRTでは字幕番号・タイムコードを診断せず、複数行の字幕本文だけを診断します。CRLF／LFを保持し、HTML風タグは解析・除去しません。問題文字には字幕番号、開始・終了時刻、本文内の1始まり行番号、行内の0始まりUTF-16位置を付けます。JSONの `utf16Index` は字幕本文全体での位置です。`.txt` の出力・JSON形式は従来どおりです。
+
+SRTの通常JSON項目には `subtitleNumber`、`startTime`、`endTime`、`textLine`、`utf16IndexInLine` を追加します。`--unique` は字幕をまたいで集約し、JSONでは `firstUtf16Index` と `count` に加え、`firstSubtitleNumber`、`firstStartTime`、`firstEndTime`、`firstTextLine`、`firstUtf16IndexInLine` を返します。
+
+入力拡張子は `.txt` と `.srt` のみ（大文字小文字を区別しません）で、どちらもUTF-8のみです。SRTの番号・時刻・本文の欠落や不正、重複番号、字幕間の区切り欠落は構文エラーとして終了コード2を返し、標準エラーへ元ファイルの行番号付きで表示します。非連番の番号、末尾空行の有無、空白だけの本文は受理します。空行だけの本文と空ファイルは構文エラーです。
 
 ## 常用漢字の音訓と学校段階
 

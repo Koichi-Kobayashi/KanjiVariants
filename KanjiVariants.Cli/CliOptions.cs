@@ -7,8 +7,8 @@ internal enum CliCommand { Check, Joyo }
 
 internal sealed record CliOptions(string File, KanjiGrade? Grade, bool Unique, bool Json, CliCommand Command)
 {
-    internal const string Usage = "Usage: kanjivariants check <file.txt> --grade <1-6> [--unique] [--json]\n"
-        + "       kanjivariants joyo <file.txt> [--unique] [--json]";
+    internal const string Usage = "Usage: kanjivariants check <file.txt|file.srt> --grade <1-6> [--unique] [--json]\n"
+        + "       kanjivariants joyo <file.txt|file.srt> [--unique] [--json]";
 
     internal static CliOptions Parse(string[] args)
     {
@@ -58,8 +58,10 @@ internal sealed record CliOptions(string File, KanjiGrade? Grade, bool Unique, b
         }
         if (command == CliCommand.Check && grade is null)
             throw new ArgumentException("--grade is required.");
-        if (!string.Equals(Path.GetExtension(args[1]), ".txt", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Only .txt files are supported.");
+        string extension = Path.GetExtension(args[1]);
+        if (!string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(extension, ".srt", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Only .txt and .srt files are supported.");
         return new CliOptions(args[1], grade, unique, json, command);
     }
 }

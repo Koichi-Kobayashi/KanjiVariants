@@ -21,10 +21,15 @@ internal static class CliApplication
             return 2;
         }
 
-        string text;
+        CliInput input;
         try
         {
-            text = Utf8TextInput.Read(options.File);
+            input = CliInput.Read(options.File);
+        }
+        catch (FormatException ex)
+        {
+            error.WriteLine($"Error: {ex.Message}");
+            return 2;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
@@ -34,14 +39,21 @@ internal static class CliApplication
             return 2;
         }
 
+        if (input.Subtitles is not null)
+        {
+            var subtitles = SrtCheck.Analyze(input.Subtitles, options.Command, options.Grade);
+            SrtCheckOutput.Write(subtitles, options.Unique, options.Json, output);
+            return subtitles.ExitCode;
+        }
+
         if (options.Command == CliCommand.Joyo)
         {
-            var joyo = JoyoTextCheck.Analyze(text);
+            var joyo = JoyoTextCheck.Analyze(input.Text);
             JoyoCheckOutput.Write(joyo, options.Unique, options.Json, output);
             return joyo.ExitCode;
         }
 
-        var check = TextCheck.Analyze(text, options.Grade!.Value);
+        var check = TextCheck.Analyze(input.Text, options.Grade!.Value);
         CheckOutput.Write(check, options.Unique, options.Json, output);
         return check.ExitCode;
     }
