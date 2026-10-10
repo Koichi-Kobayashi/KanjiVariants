@@ -52,6 +52,7 @@ Desktop.ini
 *.swp
 *.swo
 *~
+tmp/
 
 # Publish / package output
 artifacts/

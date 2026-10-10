@@ -2,5 +2,6 @@
   <PropertyGroup>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <Version>1.2.0</Version>
+    <KanjiVariantsCliVersion Condition="'$(KanjiVariantsCliVersion)' == ''">1.2.0</KanjiVariantsCliVersion>
   </PropertyGroup>
 </Project>
