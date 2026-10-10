@@ -12,6 +12,21 @@
     <Authors>Koichi Kobayashi</Authors>
     <Description>A .NET tool for checking educational and Joyo kanji in UTF-8 TXT files and SRT subtitles, with grade selection, JSON output, and duplicate grouping.</Description>
     <PackageTags>kanji;japanese;cli;dotnet-tool;education;joyo;subtitle;srt;txt</PackageTags>
+    <PackageReleaseNotes>
+      KanjiVariants.Cli 1.2.0 初回リリース
+      
+      .NET 10対応のコマンドラインツールとして公開しました。
+      
+      - 教育漢字チェック：指定した小学1～6年生までに習う漢字かを診断
+      - 常用漢字チェック：文章中に常用漢字表の本表字以外の漢字が含まれるかを診断
+      - TXT・SRT対応：UTF-8テキストファイルとSRT字幕ファイルを解析
+      - 位置情報の出力：問題のある漢字の位置を表示。SRTでは字幕番号・時間・行番号も取得可能
+      - JSON出力：`--json` オプションに対応
+      - 重複集約：`--unique` オプションに対応
+      - CI連携：診断結果に応じた終了コード（0・1・2）を返却
+      
+      実行には.NET 10ランタイムが必要です。
+    </PackageReleaseNotes>
     <PackageProjectUrl>https://koichi-kobayashi.github.io/KanjiVariants/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Koichi-Kobayashi/KanjiVariants</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
