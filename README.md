@@ -242,19 +242,24 @@ null入力は `ArgumentNullException`、未定義の対象学年は `ArgumentOut
 
 ### 文章診断CLI（サンプル・ツール）
 
-`KanjiVariants.Cli` は、既存の教育漢字・常用漢字診断APIを使って `.txt` ファイル全体、または `.srt` の字幕本文をチェックする.NET Toolです。実行には.NET 10ランタイムが必要です。NuGet.orgへの公開は準備中で、公開後は次の手順を利用できます。
+`KanjiVariants.Cli` は、既存の教育漢字・常用漢字診断APIを使って `.txt` ファイル全体、または `.srt` の字幕本文をチェックする.NET Toolです。実行には.NET 10ランタイムが必要です。NuGet.orgからインストールして利用できます。
 
-```powershell
+# インストール
 dotnet tool install --global KanjiVariants.Cli
+
+# 実行
 kanjivariants check sample.txt --grade 3
 kanjivariants joyo sample.txt
 kanjivariants check subtitle.srt --grade 3
 kanjivariants joyo subtitle.srt --json
-dotnet tool update --global KanjiVariants.Cli
-dotnet tool uninstall --global KanjiVariants.Cli
-```
 
-公開前はローカルパッケージから専用ディレクトリへインストールできます。
+# 更新
+dotnet tool update --global KanjiVariants.Cli
+
+# アンインストール
+dotnet tool uninstall --global KanjiVariants.Cli
+
+NuGet.orgを使用せず、ローカルで生成したパッケージから専用ディレクトリへインストールすることもできます。
 
 ```powershell
 dotnet pack KanjiVariants.Cli/KanjiVariants.Cli.csproj -c Release -o ./artifacts/nuget
