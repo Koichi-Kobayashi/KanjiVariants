@@ -46,6 +46,15 @@ jobs:
         run: dotnet build KanjiVariants.slnx -c Release --no-restore
       - name: Test
         run: dotnet test KanjiVariants.Tests/KanjiVariants.Tests.csproj -c Release --no-build
+      - name: CLI tests
+        run: dotnet test KanjiVariants.Cli.Tests/KanjiVariants.Cli.Tests.csproj -c Release --no-build
+      - name: Verify virtual compiler paths
+        run: >-
+          dotnet run --project tools/VerifyBuildArtifacts -c Release --
+          KanjiVariants/bin/Release/net6.0/KanjiVariants.dll
+          KanjiVariants/bin/Release/net6.0/KanjiVariants.pdb
+          KanjiVariants.Cli/bin/Release/net10.0/KanjiVariants.Cli.dll
+          KanjiVariants.Cli/bin/Release/net10.0/KanjiVariants.Cli.pdb
       - name: Verify DLL and XML
         # 一方だけ生成された状態でもアップロードしないよう、両方の存在を確認します。
         run: |

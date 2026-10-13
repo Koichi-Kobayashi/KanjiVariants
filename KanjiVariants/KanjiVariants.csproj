@@ -38,6 +38,8 @@
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\LICENSE-NOTICES.md" Pack="true" PackagePath="\" />
+    <None Include="../data/JIS/JIS0208.TXT" Pack="true" PackagePath="data/JIS/" />
+    <None Include="../data/JIS/Unicode-LICENSE.txt" Pack="true" PackagePath="data/JIS/" />
   </ItemGroup>
 
 </Project>

@@ -4,9 +4,13 @@
 """JIS X 0213所属フラグの生成規則を検証します。"""
 
 import unittest
+import hashlib
+import tempfile
+from pathlib import Path
 
 from generate import (
     JIS_X_0208,
+    load_jis_x0208_mapping,
     JIS_X_0213_PLANE_1,
     JIS_X_0213_PLANE_2,
     character_set_flags,
@@ -54,6 +58,35 @@ class CharacterSetGenerationTests(unittest.TestCase):
                             for name in ('MJ006318', 'MJ006320', 'MJ056824')))
         bmp, _ = character_set_flags(rows, set())
         self.assertEqual(JIS_X_0213_PLANE_1, bmp[0x4E11])
+
+
+class JisX0208SourceTests(unittest.TestCase):
+    def test_all_kuten_and_compatibility(self):
+        mapping = load_jis_x0208_mapping()
+        values = [mapping.get((ku, ten)) for ku in range(1, 95) for ten in range(1, 95)]
+        self.assertEqual(8836, len(values))
+        self.assertEqual(6879, len(mapping))
+        self.assertEqual(1957, values.count(None))
+        self.assertEqual(6879, len(set(mapping.values())))
+        self.assertEqual(0xff3c, mapping[1, 32])
+        self.assertEqual(0x301c, mapping[1, 33])
+        self.assertNotIn((85, 1), mapping)
+
+    def test_all_combined_bmp_flags_match_published_1_2_0(self):
+        # NuGet 1.2.0 / 983fa8eの実DLLから独立監査で取得した全65,536 bytes。
+        # JIS X 0208だけでなくMJ由来X0213 bitも変わらないことを固定する。
+        bmp, _ = character_set_flags(mj_rows(), set(load_jis_x0208_mapping().values()))
+        self.assertEqual(65536, len(bmp))
+        self.assertEqual('e13c299a846ae1c670b3e5b656f682ba77ba8b39dc1191f7f0bee52c1ac4a710',
+                         hashlib.sha256(bytes(bmp)).hexdigest())
+
+    def test_modified_source_is_rejected(self):
+        source = Path(__file__).resolve().parents[1] / 'data/JIS/JIS0208.TXT'
+        with tempfile.TemporaryDirectory() as directory:
+            changed = Path(directory) / 'JIS0208.TXT'
+            changed.write_bytes(source.read_bytes() + b'\n')
+            with self.assertRaisesRegex(ValueError, 'SHA-256'):
+                load_jis_x0208_mapping(changed)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,11 @@
 <Project>
   <PropertyGroup>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <!-- PDBを削除せず、全構成/対象TFMでソース/PDB位置を仮想化する。 -->
+    <Deterministic>true</Deterministic>
+    <!-- SDKがSourceRootからPathMapとSourceLinkのキーを同時に正規化する。 -->
+    <DeterministicSourcePaths>true</DeterministicSourcePaths>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     <Version>1.2.0</Version>
     <KanjiVariantsCliVersion Condition="'$(KanjiVariantsCliVersion)' == ''">1.2.0</KanjiVariantsCliVersion>
   </PropertyGroup>

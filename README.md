@@ -505,6 +505,10 @@ JIS X 0212データは固定した `data/JIS/jisx-212.ucm` と `data/Unicode/Uni
 
 ## データと出典
 
+JIS X 0208は `data/JIS/JIS0208.TXT`（SHA-256 `1c571870457f19c97720631fa83ee491549a96ba1436da1296786a67d8632e87`）をオフラインで読みます。原典hash・全8,836区点・割当6,879・未割当1,957と1区32点の互換方針を検証し、Python codecの版に依存しません。[監査記録](docs/JIS-X0208-PROVENANCE-AUDIT.md)を参照してください。
+
+MJ一覧 Ver.006.02/縮退マップ Ver.1.2.0の原著作者はIPA、加工者はKoichi Kobayashi。検索/所属/漢字施策/文字情報/代替候補・一意変換の加工データ（生成C#の該当表・派生CSV・DLL内の同データ）はCC BY-SA 2.1 JPです。独自C#コードMITと分け、他の外部データは各条件を保持します。独立アプリケーションコード全体のライセンスを変更するものではありません。対象範囲と加工はLICENSE-NOTICES.mdに明記します。
+
 生成元データを `data/` に固定し、実行時には生成済みデータを使います。JIS X 0213の所属情報は、MJ文字情報一覧表 Ver.006.02の「実装したUCS」と「X0213」に基づいています。
 
 | データ | バージョン・出典 |
@@ -514,7 +518,7 @@ JIS X 0212データは固定した `data/JIS/jisx-212.ucm` と `data/Unicode/Uni
 | Unicode IVD | 2026-08-03、[Unicode IVD](https://www.unicode.org/ivd/data/2026-08-03/) |
 | Unicode Standardized Variants | Unicode 18.0.0、[Unicode Character Database](https://www.unicode.org/Public/18.0.0/ucd/StandardizedVariants.txt) |
 | JIS X 0212のUnicode対応 | [Unicode ICU対応表](https://github.com/unicode-org/icu/blob/61607c27732906d36c5bd4d23ecc092f89f53a2b/icu4c/source/data/mappings/jisx-212.ucm)、Table version 0.9（2000-08-20）、コミット固定。漢字部分は[Unihan 18.0.0](https://www.unicode.org/Public/18.0.0/ucd/Unihan.zip)の `kJis1` と照合。[公式プロパティ仕様](https://www.unicode.org/reports/tr38/#kJis1)はJIS X 0212-1990の区点を定義。 |
-| JIS X 0208 の Unicode 対応 | Pythonの `euc_jp` デコーダーで区点1–94を走査して生成。Windows CP932の拡張文字は含めない。 |
+| JIS X 0208 の Unicode 対応 | 固定Unicode JIS0208.TXT Table 2.0（2011-10-14、header更新2015-12-02）、Unicode License V3。1区32点をU+FF3Cへ変更し従来互換。legacy mappingの一例。CP932拡張は含めない。 |
 | 常用漢字表の音訓索引 | [文化庁「常用漢字表の音訓索引」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/kanji/joyokanjisakuin/index.html)。公開HTMLを固定し、本表の文字・音訓・語例・備考をKanjiVariants用に抽出・再構成。 |
 | 学年別漢字配当表 | [文部科学省「小学校学習指導要領（平成29年告示）」別表「学年別漢字配当表」](https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_01.pdf)。公式PDFを固定し、画像表を転記して検索表へ加工。各学年80・160・200・202・193・191字。 |
 | 音訓の小・中・高等学校段階別割り振り表 | 文部科学省、平成29年3月。[案内ページ](https://www.mext.go.jp/a_menu/shotou/new-cs/1385768.htm)・[原典PDF](https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2017/05/15/1385768.pdf)。固定PDFの文字と座標から本表の音訓別段階・1字下げ、付表1・付表2を抽出。 |
@@ -550,3 +554,13 @@ MJデータの著作権者は独立行政法人情報処理推進機構（IPA）
 ## 免責事項
 
 本ライブラリおよび同梱データは現状のまま提供されます。本ライブラリまたは同梱データの利用により発生したいかなる損害についても、作者は一切責任を負いません。ライセンス条件の異なる同梱データについては、[LICENSE-NOTICES.md](https://github.com/Koichi-Kobayashi/KanjiVariants/blob/main/LICENSE-NOTICES.md) もご確認ください。
+
+### 配布前のビルド・パス検証
+
+全構成に決定論的SourceRoot/PathMap/SourceLink正規化を適用し、PDBを削除せずソース位置を仮想化します。公開著作権者名・SourceLinkのHTTPS URLはローカルパスと区別します。正式パッケージのソースcommit・通知・版の確認は別途必要です。
+
+```text
+dotnet run --project tools/VerifyBuildArtifacts -c Release -- KanjiVariants/bin/Release/net6.0/KanjiVariants.dll KanjiVariants/bin/Release/net6.0/KanjiVariants.pdb
+```
+
+CIでも同じ検査器を使います。ローカルpackはGit管理外の出力先を指定し、公開済みパッケージを置換・公開しないでください。

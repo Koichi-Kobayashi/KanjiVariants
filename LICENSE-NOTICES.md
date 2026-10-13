@@ -40,7 +40,7 @@ SOFTWARE.
 
 - MJ文字情報一覧表およびMJ縮退マップ: 独立行政法人情報処理推進機構（IPA）提供。CC BY-SA 2.1 JP。ライセンス本文と条件は <https://creativecommons.org/licenses/by-sa/2.1/jp/> を参照してください。改変・再構成したデータを再配布する場合は、同ライセンスの表示および継承条件に従ってください。
 - Unicode IVD、Unicode Standardized Variants および Unihan: Unicode, Inc. 提供。Unicode の利用条件 <https://www.unicode.org/terms_of_use.html> に従ってください。
-- JIS X 0208 対応表: Python の `euc_jp` デコーダーによる区点走査から生成しています。Python の文字コード実装および Unicode データに関する条件は、使用した Python ディストリビューションのライセンス・通知も確認してください。
+- JIS X 0208 所属集合: Unicode, Inc.の固定JIS0208.TXT Table 2.0を元に加工。詳細は以下「JIS X 0208」の節。
 
 各データのバージョン、生成元および詳細は同梱の [README.md](README.md) を参照してください。
 
@@ -51,6 +51,27 @@ SOFTWARE.
 `data/Joyo/JoyoKanjiSchoolStages2017.pdf` と `GeneratedJoyoKanjiEducationData.g.cs` の音訓別学校段階、1字下げ情報、付表1・付表2の語は、[文部科学省「音訓の小・中・高等学校段階別割り振り表（平成29年3月）」](https://www.mext.go.jp/a_menu/shotou/new-cs/1385768.htm)の[原典PDF](https://www.mext.go.jp/a_menu/shotou/new-cs/__icsFiles/afieldfile/2017/05/15/1385768.pdf)をもとに、KanjiVariants用に加工して作成しています。固定PDFの文字と座標を抽出し、既存の常用漢字・学年データと照合して検索表へ再構成しています。[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
 
 `data/Okurigana/` の公式HTMLと `GeneratedOkuriganaData.g.cs` の掲載語・許容表記・注記は、[文化庁「送り仮名の付け方」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html)をもとに、KanjiVariants用に加工・再構成しています。通則1～7と付表のHTMLを固定保存し、本文の見出しと語例を解析して本則・例外・許容・付表別の検索データへ整理しています。読み・構成関係・《　》の原典表記等は注記に分離しています。文化庁サイトに適用される[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。この外部公開データ由来の表を、独自プログラムコードのMIT Licenseと同一視しません。
+
+## JIS X 0208
+
+Unicode, Inc.提供の **JIS X 0208 (1990) to Unicode**（JIS0208.TXT、Unicode version 1.1、Table version 2.0）を使用します。日付2011-10-14、ヘッダー更新2015-12-02、原典著作権 **© 2015 Unicode®, Inc.** を保持します。
+
+- 原典: https://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0208.TXT
+- 保存: `data/JIS/JIS0208.TXT`（原文ヘッダー・利用条件参照を維持）
+- SHA-256: `1c571870457f19c97720631fa83ee491549a96ba1436da1296786a67d8632e87`
+- 許諾: Unicode License V3。以下のUnicode節と `data/JIS/Unicode-LICENSE.txt` に著作権・許諾全文を保持。JIS対応データにも同条件を適用します。
+
+legacy mappingの可能な対応の一例であり、現行規格の唯一の規範的対応表ではありません。Koichi Kobayashiが全8,836区点（割当6,879・未割当1,957）を評価し、Unicode所属集合へ加工しています。1区32点だけ原表U+005CをU+FF3Cへ変更し、従来の通常Python euc_jpによる所属結果を維持する独自の互換方針です。
+
+区点対やPythonコードはDLLへコピーせず、所属bitを `GeneratedData.g.cs` の `BmpCharacterSetFlags` へ組み込みます。同配列のMJ由来JIS X 0213 bitとは条件を分けます。今回の固定Unicode原典の許諾は、過去の公開NuGet 1.2.0のPython API出力の権利評価と別です。Pythonを使っただけでPSFを生成データ全体へ自動適用しません。過去の監査と未確認事項は `docs/JIS-X0208-PROVENANCE-AUDIT.md` を参照してください。
+
+## MJ加工データのライセンス範囲
+
+原著作者は独立行政法人情報処理推進機構（IPA）。原典は [MJ文字情報一覧表 Ver.006.02](https://moji.or.jp/mojikiban/mjlist/) と [MJ縮退マップ Ver.1.2.0](https://moji.or.jp/mojikiban/map/) です。Koichi KobayashiがUCS/IVS/SVS・JIS X 0213所属・漢字施策・文字情報・代替候補/一意変換を検索用配列へ抽出・再構成しています。
+
+同加工データは **CC BY-SA 2.1 JP**（https://creativecommons.org/licenses/by-sa/2.1/jp/ 、[許諾全文](https://creativecommons.org/licenses/by-sa/2.1/jp/legalcode)）で提供します。原著作者・出典・加工表示・ライセンスURIを保持し、同加工データの改変/再配布は同条件の継承に従ってください。
+
+対象は `GeneratedData.g.cs` のMJ由来検索/代替配列とMJ由来所属bit、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedMjCharacterData.g.cs` のMJ抽出表、および `data/MJ/MJUniqueAlternatives.1.2.0.csv`。DLLに含まれる同データにも条件は残ります。Unicode/JIS由来部分・独自制御コードには各条件を適用します。独自コードのMIT表示でMJ加工データをMITへ再許諾しません。一方、独立アプリケーションコード全体をCC BY-SAへ変更するという意味ではありません。
 
 ## Unicodeデータの通知
 

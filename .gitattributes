@@ -5,3 +5,7 @@
 /data/JIS/jisx-212.ucm -text
 /data/Unicode/Unihan_OtherMappings.18.0.0.txt -text
 /data/JIS/ICU-LICENSE.txt -text
+
+# Unicode JIS0208原典と許諾全文のバイト列を全checkoutで保持します。
+/data/JIS/JIS0208.TXT -text
+/data/JIS/Unicode-LICENSE.txt -text

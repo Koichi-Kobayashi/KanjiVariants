@@ -1,5 +1,8 @@
 // 自動生成ファイルです。手編集しないでください。
 // 収録データはMJ文字情報一覧表の「人名用漢字」を元に加工しています。
+// 原著作者: IPA。MJ一覧 Ver.006.02由来の加工データ: CC BY-SA 2.1 JP（独自コードMITとは別）。
+// 加工者: Koichi Kobayashi。検索用配列へ抽出・再構成。
+// https://creativecommons.org/licenses/by-sa/2.1/jp/ / LICENSE-NOTICES.md。
 // 出典・利用条件の詳細は LICENSE-NOTICES.md を参照してください。
 
 namespace KanjiVariants;
