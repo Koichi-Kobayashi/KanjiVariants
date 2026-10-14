@@ -6,7 +6,7 @@
     <!-- SDKがSourceRootからPathMapとSourceLinkのキーを同時に正規化する。 -->
     <DeterministicSourcePaths>true</DeterministicSourcePaths>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <KanjiVariantsCliVersion Condition="'$(KanjiVariantsCliVersion)' == ''">1.2.0</KanjiVariantsCliVersion>
   </PropertyGroup>
 </Project>

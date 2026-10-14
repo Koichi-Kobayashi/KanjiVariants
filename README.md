@@ -23,14 +23,16 @@ KanjiVariantsの文字列変換・診断機能を、インストール不要で�
 
 NuGetパッケージは `net6.0` 向けです。.NET 6以降のアプリケーションで利用できます。
 
+> 以下はNuGet.orgで1.2.1が公開された後の導入例です。公開状況はNuGet.orgのパッケージページで確認してください。公開済み1.2.0は上書きしません。
+
 ```bash
-dotnet add package KanjiVariants --version 1.2.0
+dotnet add package KanjiVariants --version 1.2.1
 ```
 
 プロジェクトファイルに直接指定する場合は、`ItemGroup` 内へ追加してください。
 
 ```xml
-<PackageReference Include="KanjiVariants" Version="1.2.0" />
+<PackageReference Include="KanjiVariants" Version="1.2.1" />
 ```
 
 ## 対応する CharacterSet
