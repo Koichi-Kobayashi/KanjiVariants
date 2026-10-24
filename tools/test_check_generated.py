@@ -35,7 +35,7 @@ class GeneratedCheckTests(unittest.TestCase):
                     run.assert_not_called()
                 else:
                     check_generated.main()
-                    self.assertEqual(7, run.call_count)
+                    self.assertEqual(8, run.call_count)
                     self.assertTrue(all(call.kwargs['check'] for call in run.call_args_list))
             self.assertEqual(expected, {cs: cs.read_bytes(), csv: csv.read_bytes()})
 

@@ -37,10 +37,11 @@ def main():
         'generate_okurigana.py',
         'generate_mj_character.py',
         'generate_jis_x0212.py',
+        'generate_mj_fallback.py',
     ):
         subprocess.run([sys.executable, str(root / 'tools' / script), '--check'],
                        cwd=root, check=True)
-    print('Generated check: all 8 generators and derived MJ CSV match.')
+    print('Generated check: all 9 generators and derived MJ CSV match.')
 
 
 if __name__ == '__main__':

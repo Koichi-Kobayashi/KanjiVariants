@@ -4,7 +4,7 @@
 
 ## プログラムコード
 
-KanjiVariants のプログラムコード（`GeneratedData.g.cs`、`GeneratedJoyoKanjiData.g.cs`、`GeneratedEducationKanjiData.g.cs`、`GeneratedJoyoKanjiEducationData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedMjCharacterData.g.cs`、`GeneratedJisX0212Data.g.cs`、`GeneratedOkuriganaData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
+KanjiVariants のプログラムコード（`GeneratedData.g.cs`、`GeneratedJoyoKanjiData.g.cs`、`GeneratedEducationKanjiData.g.cs`、`GeneratedJoyoKanjiEducationData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedMjCharacterData.g.cs`、`GeneratedMjFallbackData.g.cs`、`GeneratedJisX0212Data.g.cs`、`GeneratedOkuriganaData.g.cs` に収録した外部データ由来の表を除く）は、Koichi Kobayashi が著作権を有し、MIT License の下で提供されます。
 
 MIT License の本文は以下のとおりです。
 
@@ -36,7 +36,7 @@ SOFTWARE.
 
 ## 文字データ
 
-`GeneratedData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedMjCharacterData.g.cs`、`GeneratedJisX0212Data.g.cs` の表およびリポジトリで公開している `data/MJ/MJUniqueAlternatives.1.2.0.csv` には、以下の外部データに由来する内容が含まれます。これらのデータにはプログラムコードの MIT License ではなく、各出典元の条件が適用されます。
+`GeneratedData.g.cs`、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedMjCharacterData.g.cs`、`GeneratedMjFallbackData.g.cs`、`GeneratedJisX0212Data.g.cs` の表およびリポジトリで公開している `data/MJ/MJUniqueAlternatives.1.2.0.csv` には、以下の外部データに由来する内容が含まれます。これらのデータにはプログラムコードの MIT License ではなく、各出典元の条件が適用されます。
 
 - MJ文字情報一覧表およびMJ縮退マップ: 独立行政法人情報処理推進機構（IPA）提供。CC BY-SA 2.1 JP。ライセンス本文と条件は <https://creativecommons.org/licenses/by-sa/2.1/jp/> を参照してください。改変・再構成したデータを再配布する場合は、同ライセンスの表示および継承条件に従ってください。
 - Unicode IVD、Unicode Standardized Variants および Unihan: Unicode, Inc. 提供。Unicode の利用条件 <https://www.unicode.org/terms_of_use.html> に従ってください。
@@ -67,11 +67,13 @@ legacy mappingの可能な対応の一例であり、現行規格の唯一の規
 
 ## MJ加工データのライセンス範囲
 
+`GeneratedMjFallbackData.g.cs` も既存MJ原典に由来する加工データです。MJ文字情報一覧表 Ver.006.02とMJ縮退マップ Ver.1.2.0から、元の五分類、MJ識別子、元表現の列由来、面区点、通知種別・ホップ数・付記・表・順位を保持した直接関係の逆引き索引へ、Koichi Kobayashiが再構成しています。原著作者IPA、CC BY-SA 2.1 JP、出典・加工表示・継承条件は以下と同じです。DLL内の同索引にも適用され、独自コードのMITとは区別します。登録済みシーケンスの照合に使う固定Unicodeデータには、下記Unicode通知を適用します。
+
 原著作者は独立行政法人情報処理推進機構（IPA）。原典は [MJ文字情報一覧表 Ver.006.02](https://moji.or.jp/mojikiban/mjlist/) と [MJ縮退マップ Ver.1.2.0](https://moji.or.jp/mojikiban/map/) です。Koichi KobayashiがUCS/IVS/SVS・JIS X 0213所属・漢字施策・文字情報・代替候補/一意変換を検索用配列へ抽出・再構成しています。
 
 同加工データは **CC BY-SA 2.1 JP**（https://creativecommons.org/licenses/by-sa/2.1/jp/ 、[許諾全文](https://creativecommons.org/licenses/by-sa/2.1/jp/legalcode)）で提供します。原著作者・出典・加工表示・ライセンスURIを保持し、同加工データの改変/再配布は同条件の継承に従ってください。
 
-対象は `GeneratedData.g.cs` のMJ由来検索/代替配列とMJ由来所属bit、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedMjCharacterData.g.cs` のMJ抽出表、および `data/MJ/MJUniqueAlternatives.1.2.0.csv`。DLLに含まれる同データにも条件は残ります。Unicode/JIS由来部分・独自制御コードには各条件を適用します。独自コードのMIT表示でMJ加工データをMITへ再許諾しません。一方、独立アプリケーションコード全体をCC BY-SAへ変更するという意味ではありません。
+対象は `GeneratedData.g.cs` のMJ由来検索/代替配列とMJ由来所属bit、`GeneratedJinmeiyoKanjiData.g.cs`、`GeneratedMjCharacterData.g.cs` のMJ抽出表、`GeneratedMjFallbackData.g.cs` の逆索引、および `data/MJ/MJUniqueAlternatives.1.2.0.csv`。DLLに含まれる同データにも条件は残ります。Unicode/JIS由来部分・独自制御コードには各条件を適用します。独自コードのMIT表示でMJ加工データをMITへ再許諾しません。一方、独立アプリケーションコード全体をCC BY-SAへ変更するという意味ではありません。
 
 ## Unicodeデータの通知
 
