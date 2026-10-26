@@ -68,6 +68,10 @@ public readonly record struct KanjiCharacter
 
     internal static KanjiCharacter FromScalar(int codePoint) => new(new Rune(codePoint), null);
 
+    // 生成時に登録済み表現と検証した専用索引だけが使用します。
+    internal static KanjiCharacter FromRegisteredSequence(int codePoint, int selector) =>
+        new(new Rune(codePoint), new Rune(selector));
+
     /// <inheritdoc />
     public override string ToString() => VariationSelector is Rune selector
         ? BaseCharacter.ToString() + selector.ToString()

@@ -4,6 +4,33 @@ MJ縮退マップに基づく異体字・代替文字の検索・置換と、JIS
 
 異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
 
+## MJ縮退関係の逆引き（開発中・公開済み1.2.1には未収録）
+
+`MjFallback.GetSources` は指定文字を縮退先とする元表現を検索します。一般的な異体字辞書、自動置換、字体の交換可能性を保証するAPIではありません。既存の縮退APIの動作やパッケージのバージョンは変更していません。
+
+```csharp
+using KanjiVariants;
+
+var sources = MjFallback.GetSources("高");
+// KanjiCharacterを受け取るオーバーロードもあります。
+var same = MjFallback.GetSources(KanjiCharacter.Parse("高"));
+foreach (var source in sources)
+{
+    Console.WriteLine(source.Character); // 髙など。全候補を単なる異体字と扱わないでください。
+    foreach (var evidence in source.Evidence)
+        Console.WriteLine($"{evidence.Source} → {evidence.Target}: {evidence.MjGlyphName}, {evidence.RelationKind}");
+}
+```
+
+- `高 → 髙`、`斎 → 齋`、`崎 → 﨑`、`辻 → 辻＋登録済みIVS`等を原典の直接関係から取得します。
+- 五分類の根拠、原典上の縮退方向、MJ文字図形名、通知種別・ホップ数・付記・表・順位を保持します。同じ元表現は統合し、異なる根拠は残します。
+- 元表現は実装UCS・互換漢字・登録済みIVS/SVSです。実装UCS・互換漢字のない行は対応UCSを補助表現に使い、`SourceRepresentationKind`で区別します。対応UCSと実装UCSを同一視しません。
+- 自己候補は除外し、基底コードポイント、VSの順に並べます。根拠もMJ番号・分類等で固定順です。正規化・推移展開・JIS集合での絞り込みは行いません。
+- 戻り値は変更不能です。検索済みの結果を遅延キャッシュして共有し、連続検索で候補を再構築しません。初回は生成済み配列の初期化と該当結果の構築だけで、MJ全文の解析は行いません。
+- 有効な表現で該当なしは空です。原典の縮退先がVSなしのため、登録済みVS付き入力も空です。nullは`ArgumentNullException`、空文字・複数文字・不正UTF-16・未登録VSは`FormatException`です。既定値の`KanjiCharacter`は空です。
+- 原典・生成器は`data/MJ/MJShrinkMap.1.2.0.json`と`tools/generate_mj_fallback.py`です。再生成は`python tools/generate_mj_fallback.py`、非更新検証は同コマンドに`--check`を付けます。全生成物の検証は`python tools/check_generated.py`です。
+- 逆索引はMJ加工データとしてCC BY-SA 2.1 JPです。出典・通知は`LICENSE-NOTICES.md`を参照してください。
+
 ## ブラウザで試す
 
 **[KanjiVariants Playground を開く](https://koichi-kobayashi.github.io/KanjiVariants.Playground/)**
