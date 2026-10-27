@@ -2,34 +2,13 @@
 
 MJ縮退マップに基づく異体字・代替文字の検索・置換と、JIS X 0208 / JIS X 0212 / JIS X 0213 の文字集合判定を行える .NET 6 ライブラリです。常用漢字・教育漢字・人名用漢字、常用漢字の音訓と小学校・中学校・高等学校ごとの配当、表外読み、送り仮名、MJ文字情報も参照できます。
 
-異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
+## 主な機能
 
-## MJ縮退関係の逆引き（開発中・公開済み1.2.1には未収録）
-
-`MjFallback.GetSources` は指定文字を縮退先とする元表現を検索します。一般的な異体字辞書、自動置換、字体の交換可能性を保証するAPIではありません。既存の縮退APIの動作やパッケージのバージョンは変更していません。
-
-```csharp
-using KanjiVariants;
-
-var sources = MjFallback.GetSources("高");
-// KanjiCharacterを受け取るオーバーロードもあります。
-var same = MjFallback.GetSources(KanjiCharacter.Parse("高"));
-foreach (var source in sources)
-{
-    Console.WriteLine(source.Character); // 髙など。全候補を単なる異体字と扱わないでください。
-    foreach (var evidence in source.Evidence)
-        Console.WriteLine($"{evidence.Source} → {evidence.Target}: {evidence.MjGlyphName}, {evidence.RelationKind}");
-}
-```
-
-- `高 → 髙`、`斎 → 齋`、`崎 → 﨑`、`辻 → 辻＋登録済みIVS`等を原典の直接関係から取得します。
-- 五分類の根拠、原典上の縮退方向、MJ文字図形名、通知種別・ホップ数・付記・表・順位を保持します。同じ元表現は統合し、異なる根拠は残します。
-- 元表現は実装UCS・互換漢字・登録済みIVS/SVSです。実装UCS・互換漢字のない行は対応UCSを補助表現に使い、`SourceRepresentationKind`で区別します。対応UCSと実装UCSを同一視しません。
-- 自己候補は除外し、基底コードポイント、VSの順に並べます。根拠もMJ番号・分類等で固定順です。正規化・推移展開・JIS集合での絞り込みは行いません。
-- 戻り値は変更不能です。検索済みの結果を遅延キャッシュして共有し、連続検索で候補を再構築しません。初回は生成済み配列の初期化と該当結果の構築だけで、MJ全文の解析は行いません。
-- 有効な表現で該当なしは空です。原典の縮退先がVSなしのため、登録済みVS付き入力も空です。nullは`ArgumentNullException`、空文字・複数文字・不正UTF-16・未登録VSは`FormatException`です。既定値の`KanjiCharacter`は空です。
-- 原典・生成器は`data/MJ/MJShrinkMap.1.2.0.json`と`tools/generate_mj_fallback.py`です。再生成は`python tools/generate_mj_fallback.py`、非更新検証は同コマンドに`--check`を付けます。全生成物の検証は`python tools/check_generated.py`です。
-- 逆索引はMJ加工データとしてCC BY-SA 2.1 JPです。出典・通知は`LICENSE-NOTICES.md`を参照してください。
+- **異体字・代替文字**：MJ縮退マップに基づく候補検索と文字列の置換、登録済みIVS/SVSの処理
+- **文字集合の判定**：JIS X 0208 / 0212 / 0213への収録状況の確認
+- **漢字と読みの参照**：常用漢字・教育漢字・人名用漢字、音訓・学校段階・表外読み・送り仮名
+- **文字・文章の診断**：Unicode・MJ文字情報の参照、常用漢字・学年別漢字の文章診断とCLI
+- **MJ縮退関係の逆引き**：縮退先から元表現と根拠を取得。公開済みNuGet 1.2.1には未収録
 
 ## ブラウザで試す
 
@@ -50,7 +29,9 @@ KanjiVariantsの文字列変換・診断機能を、インストール不要で�
 
 NuGetパッケージは `net6.0` 向けです。.NET 6以降のアプリケーションで利用できます。
 
-> 以下はNuGet.orgで1.2.1が公開された後の導入例です。公開状況はNuGet.orgのパッケージページで確認してください。公開済み1.2.0は上書きしません。
+NuGet.orgで公開済みの [KanjiVariants 1.2.1](https://www.nuget.org/packages/KanjiVariants/1.2.1) をインストールします。
+
+> `MjFallback.GetSources` はmainブランチで利用できますが、公開済みNuGet 1.2.1には含まれていません。利用する場合はmainブランチのソースを[ビルド](#ビルドと検証)してください。
 
 ```bash
 dotnet add package KanjiVariants --version 1.2.1
@@ -62,9 +43,101 @@ dotnet add package KanjiVariants --version 1.2.1
 <PackageReference Include="KanjiVariants" Version="1.2.1" />
 ```
 
-## 対応する CharacterSet
+## 基本的な使い方
 
-### `CharacterSet.JisX0208`
+JIS X 0208を対象にする場合は、`CharacterSet.JisX0208` を指定します。
+
+```csharp
+using KanjiVariants;
+
+var candidates = Kanji.GetAlternatives("髙", CharacterSet.JisX0208);
+var converted = KanjiText.Replace("髙橋𠮷野", CharacterSet.JisX0208);
+// converted == "高橋吉野"
+var usable = KanjiText.IsSupported(converted, CharacterSet.JisX0208);
+```
+
+異体字機能は、MJ縮退マップに基づく漢字代替候補の検索と置換を目的としています。Shift-JISのバイト列を読み書きするエンコーダー／デコーダーではなく、JIS X 0201の半角カタカナなどを含むShift-JIS全体の文字検査も行いません。また、一般的な旧字体・異体字を網羅して新字体へ変換する辞書ではありません。通常の置換は、使用するMJデータに一意な変換先が定義されている場合に行います。明示的に指定した場合だけ、登録済みIVS/SVSから基底文字へのフォールバックも行えます。常用漢字表の参照機能は、この異体字機能とは独立しています。
+
+## MJ縮退関係の逆引き
+
+> `MjFallback.GetSources` はmainブランチで利用できますが、公開済みNuGet 1.2.1には含まれていません。
+
+`MjFallback.GetSources` は、指定文字を縮退先とするMJ縮退元表現と、その関係の根拠を取得します。縮退先から元の表現をたどり、どのMJ文字・分類に基づく候補かを確認できます。
+
+例えば、`高`から`髙`、`斎`から`齋`、`崎`から`﨑`、`辻`から`辻＋登録済みIVS`を取得できます。ここでの「高 → 髙」は検索する方向であり、原典の縮退方向は「髙 → 高」です。
+
+```csharp
+using KanjiVariants;
+
+var sources = MjFallback.GetSources("高");
+foreach (var source in sources)
+{
+    Console.WriteLine(source.Character); // 髙などの縮退元表現
+    foreach (var evidence in source.Evidence)
+        Console.WriteLine($"{evidence.Source} → {evidence.Target}: {evidence.MjGlyphName}, {evidence.RelationKind}");
+}
+```
+
+### 取得結果と根拠情報
+
+各候補の `Character` に元表現、`Evidence` に元表現から検索文字への直接関係の根拠を保持します。同じ元表現は一つの候補に統合し、異なるMJ文字・分類による根拠は残します。
+
+根拠には、原典上の縮退方向（`Source` → `Target`）、MJ文字図形名（`MjGlyphName`）、原典の五分類（`RelationKind`）が含まれます。五分類は、JIS包摂規準・UCS統合規則、法務省戸籍法関連通達・通知、法務省告示582号別表第四、辞書類等による関連字、読み・字形による類推です。元表現の列由来や原典の付記なども[詳細仕様](#逆引きの詳細仕様とデータ生成)で確認できます。
+
+### 異体字検索との違い・制限事項
+
+- 一般的な旧字体・異体字を網羅的に検索するAPIではありません。関連する文字が、必ず相互に置き換え可能とは限りません。
+- 候補は元の縮退関係と根拠情報を保持します。候補を自動置換先として採用するAPIではありません。
+- `Kanji.GetAlternatives` は指定文字からMJ縮退マップの代替候補を取得します。`MjFallback.GetSources` は逆に、指定文字へ縮退する元表現を取得します。既存の `Kanji.GetAlternatives` の動作は変更していません。
+- 原典に記録された直接関係だけを逆引きし、正規化・推移展開・JIS文字集合での絞り込みは行いません。
+
+### 逆引きの詳細仕様とデータ生成
+
+**入力・戻り値・例外**
+
+- `GetSources(string target)` は `KanjiCharacter.Parse` が認識する一文字、または登録済みIVS/SVSを受け付けます。漢字に加え、MJデータに登録された `〆` なども対象です。`GetSources(KanjiCharacter target)` オーバーロードもあります。
+- 戻り値は `IReadOnlyList<MjFallbackSource>` です。有効な表現で該当なしの場合は空の一覧です。原典の縮退先はVSなしのため、登録済みVS付き入力も空です。既定値の `KanjiCharacter` も空です。
+- 文字列入力がnullの場合は `ArgumentNullException`、`KanjiCharacter.Parse` が受理しない入力（空文字・複数文字・不正UTF-16・未登録VSなど）の場合は `FormatException` です。
+- 自己候補は除外し、基底コードポイント、VSの順に並べます。根拠もMJ番号・分類等で固定順です。
+- 結果と根拠は変更不能です。検索済みの結果を遅延キャッシュして共有し、連続検索で候補を再構築しません。初回は生成済み配列の初期化と該当結果の構築だけで、MJ全文の解析は行いません。
+
+**元表現と原典の列情報**
+
+元表現には実装UCS・互換漢字・登録済みIVS/SVSを使います。実装UCS・互換漢字のない行は対応UCSを補助表現に使い、`SourceRepresentationKind`（`MjCharacterMatchKind`）で区別します。対応UCSと実装UCSを同一視しません。
+
+| 根拠のプロパティ | 内容 |
+|---|---|
+| `SourceRepresentationKind` | MJ列から元表現を採用した理由 |
+| `JisX0213` | 原典の縮退先の面区点 |
+| `NotificationType` | 原典の通知種別 |
+| `HopCount` | 原典のホップ数。このAPIが推移検索した回数ではない |
+| `Note` / `Table` / `Rank` | 原典の付記・表・順位 |
+
+原典の面区点・通知種別・ホップ数・付記・表・順位に記録がない場合、対応するプロパティは `null` です。
+
+**データ生成**
+
+既存の [MJ文字情報一覧表 Ver.006.02](data/MJ/mji.00602.xlsx) と [MJ縮退マップ Ver.1.2.0](data/MJ/MJShrinkMap.1.2.0.json) から、[生成器](tools/generate_mj_fallback.py)で直接関係の逆引き索引を作成します。登録済みシーケンスは既存の固定Unicodeデータと照合し、新しい外部データは追加していません。
+
+```bash
+python tools/generate_mj_fallback.py
+python tools/generate_mj_fallback.py --check
+python tools/check_generated.py
+```
+
+順に、再生成、生成済み逆引き索引の非更新検証、全生成物の検証です。逆引き索引は既存MJ原典由来の加工データとしてCC BY-SA 2.1 JPの条件を維持します。独自C#コードのMITライセンスとは区別します。出典・加工・適用範囲は[データと出典](#データと出典)と [LICENSE-NOTICES.md](LICENSE-NOTICES.md#mj加工データのライセンス範囲) を参照してください。
+
+## 詳細機能とAPIリファレンス
+
+- [対応する文字集合](#対応する-characterset)・[文字集合を指定した変換](#文字集合を指定した変換)・[IVS/SVS](#ivssvs)
+- [常用漢字と音訓](#常用漢字表の音訓索引)・[表外読み](#表外読み)・[人名用漢字](#人名用漢字)・[教育漢字](#学年別漢字配当表教育漢字)
+- [文章診断CLI](#文章診断cliサンプルツール)・[音訓と学校段階](#常用漢字の音訓と学校段階)・[送り仮名](#送り仮名)
+- [MJ文字情報](#mj文字情報)・[文字診断](#文字診断)・[APIの使い分け](#api-の使い分け)・[文字列処理のルール](#文字列処理のルール)
+- [APIドキュメント](#apiドキュメント)
+
+### 対応する CharacterSet
+
+#### `CharacterSet.JisX0208`
 
 JIS X 0208 全体を対象とします。
 
@@ -74,7 +147,7 @@ JIS X 0208 全体を対象とします。
 
 第1水準漢字・第2水準漢字は別々の文字集合ではなく、JIS X 0208 内部の分類です。現時点では、第1水準のみ、または第2水準のみを個別に指定するAPIはありません。
 
-### `CharacterSet.JisX0212`
+#### `CharacterSet.JisX0212`
 
 JIS X 0212-1990はJIS X 0208を補う独立した補助文字集合です。補助漢字5,801字と非漢字266字、計6,067文字を対象とし、JIS X 0208は自動的に含めません。JIS X 0213とも別の集合として、実データから独立して判定します。
 
@@ -88,32 +161,21 @@ bool textSupported = KanjiText.IsSupported("丂丄Ä", CharacterSet.JisX0212); /
 
 固定したUnicode ICUのJIS X 0212対応表（6,067文字）を使用し、漢字5,801字のコードポイントと区点をUnihan 18.0.0の `kJis1` と全件照合しています。全6,067文字がBMP内です。現行のJIS X 0208所属表との重複は0文字、MJ由来のJIS X 0213所属表との重複は2,751文字です。
 
-### `CharacterSet.JisX0213Plane1`
+#### `CharacterSet.JisX0213Plane1`
 
 JIS X 0213 第1面だけを対象とします。第1面にはJIS X 0208由来の文字に加えて、JIS X 0213で追加された文字もあります。そのため、JIS X 0213 第1面とJIS X 0208は同じ集合ではありません。
 
-### `CharacterSet.JisX0213Plane2`
+#### `CharacterSet.JisX0213Plane2`
 
 JIS X 0213 第2面だけを対象とします。第1面の文字は、`JisX0213Plane2` では使用可能（supported）になりません。
 
-### `CharacterSet.JisX0213`
+#### `CharacterSet.JisX0213`
 
 JIS X 0213 第1面または第2面に含まれる文字を対象とします。概念的には、`JisX0213Plane1` または `JisX0213Plane2` のいずれかに含まれる文字集合です。
 
 第1水準／第2水準はJIS X 0208内の漢字分類、第1面／第2面はJIS X 0213の面を表します。したがって、第1水準と第1面、第2水準と第2面はそれぞれ別の概念です。
 
-## 使い方
-
-JIS X 0208を対象にする場合は、これまでどおり `CharacterSet.JisX0208` を指定します。
-
-```csharp
-using KanjiVariants;
-
-var candidates = Kanji.GetAlternatives("髙", CharacterSet.JisX0208);
-var converted = KanjiText.Replace("髙橋𠮷野", CharacterSet.JisX0208);
-// converted == "高橋吉野"
-var usable = KanjiText.IsSupported(converted, CharacterSet.JisX0208);
-```
+### 文字集合を指定した変換
 
 JIS X 0213の面ごと、または両面を対象にできます。
 
@@ -143,7 +205,7 @@ var jis0213Text = KanjiText.Replace(input, CharacterSet.JisX0213);
 
 `Replace` は、入力文字が指定された文字集合で使用可能ならそのまま維持します。使用できない場合はMJ縮退マップの一意な変換先を調べ、変換先が指定された `CharacterSet` に含まれる場合に置換します。置換先が使えない、または一意な変換先がない場合は、元の文字を残します。
 
-### IVS/SVS
+#### IVS/SVS
 
 IVS/SVSは、漢字の字形を区別するためにVariation Selectorを後ろに付けた表記です。登録済みのIVS/SVSは一つの漢字表現として解析し、代替候補を調べられます。Variation Sequence自体は、`JisX0208`、`JisX0212`、`JisX0213Plane1`、`JisX0213Plane2`、`JisX0213` のいずれでも supported とは判定されません。
 
@@ -157,13 +219,13 @@ var result = KanjiText.Replace("辻\U000E0100", CharacterSet.JisX0208, options);
 
 MJ縮退マップの一意な変換先が指定された文字集合で使用可能なら、Variation Selectorを除くフォールバックより優先します。一意な変換先が使えない場合でも、基底文字が指定された `CharacterSet` に含まれなければフォールバックしません。未登録のVariation Sequenceもフォールバック対象外です。`KanjiFallbackOptions.None` ではVariation Selectorを削除しません。フォールバックではVariation Selectorが指定していた字形情報が失われます。また、フォールバックした基底文字を、同じ呼び出しの中でさらにMJ縮退マップにより置換することはありません。
 
-### CP932（Windows-31J）などの対象外文字
+#### CP932（Windows-31J）などの対象外文字
 
 `CharacterSet.JisX0208` が対象とするのはJIS X 0208に定義された文字です。CP932（Windows-31J）はJIS X 0208を基礎にした符号化方式ですが、独自の拡張文字を含みます。また、JIS X 0213ではJIS X 0208にない文字も追加されています。これらをJIS X 0208の文字と同一視することはありません。
 
 文字が指定された `CharacterSet` に含まれない場合、`Kanji.IsSupported` はその漢字表現を、`KanjiText.IsSupported` は文字列中の該当文字を supported ではないと判定します。`KanjiText.Replace` は対象外文字を自動的に別の文字へ変換するものではなく、MJ縮退マップに対応があり、一意な変換先が指定された `CharacterSet` に含まれる場合に限り置換します。
 
-## 常用漢字表の音訓索引
+### 常用漢字表の音訓索引
 
 `JoyoKanji` では、文化庁の本表字2136字について、旧字体等、音訓、語例、備考を参照できます。検索時だけひらがな・カタカナの差を吸収し、返す読みは原典表記のままです。読みの検索は完全一致です。
 
@@ -182,7 +244,7 @@ var onOnly = JoyoKanji.FindByReading("こう", KanjiReadingType.On);
 
 `OldForm` は併記が1字のときだけ設定されます。「弁」のように複数ある場合は `OldForm == null` で、すべての候補を `OldForms` から参照できます。角括弧による字形注記を含む原典の文字欄は `SourceLabel` に保持します。備考欄は字単位の情報なので、各 `KanjiReading.Note` に同じ原文を入れています。どの音訓だけに適用されるかは推定していません。
 
-### 常用漢字の文章診断
+#### 常用漢字の文章診断
 
 `JoyoKanjiDiagnostics.AnalyzeText` は、文章中の漢字が常用漢字表の本表字そのものかを診断します。
 
@@ -206,7 +268,7 @@ foreach (var item in result.NonJoyoItems)
 
 `HasNonJoyoKanji` は `NotJoyoKanji`、`HasInvalidUtf16` は `InvalidUtf16` を一つでも含む場合にtrueです。`ContainsOnlyJoyoKanji` は全項目が `JoyoKanji` または `NotKanji` の場合だけtrueで、空文字もtrueです。不正UTF-16だけでもfalseとなります。null入力は `ArgumentNullException` です。
 
-## 表外読み
+### 表外読み
 
 `JoyoReading` は、既存の常用漢字表の音訓データを使って、漢字と読みの組み合わせの掲載有無を判定します。`IsListedReading()` は本表字と掲載音訓の組み合わせなら `true`、`IsHyogaiReading()` は漢字が本表字であり、その読みが掲載音訓に含まれなければ `true` です。漢字自体が非常用漢字の場合は、どちらも `false` になります。
 
@@ -219,7 +281,7 @@ bool hyogai = JoyoReading.IsHyogaiReading("愛", "いとしい"); // true（掲�
 
 旧字体・異体字・IVS/SVS付き表現は対象外で、自動変換や基底文字へのフォールバックは行いません。characterがnull・空・複数文字・非漢字の場合は `false`、readingがnullなら文字が対象外でも `ArgumentNullException` です。空のreadingは未掲載として扱うため、本表字では `IsListedReading()` が `false`、`IsHyogaiReading()` が `true` になります。必要な異体字変換や読みの入力検証は、利用者側で明示的に組み合わせてください。
 
-## 人名用漢字
+### 人名用漢字
 
 `JinmeiyoKanji` は、MJ文字情報一覧表で「漢字施策 = 人名用漢字」とされた863字の「実装したUCS」を参照します。`IsJinmeiyoKanji` はその863字だけを判定します。`IsNameUsableKanji` は、常用漢字の本表字または人名用漢字に含まれる漢字を判定します。ひらがな・カタカナなど、名前に使える漢字以外の文字を判定するAPIではありません。
 
@@ -231,7 +293,7 @@ var all = JinmeiyoKanji.GetAll(); // 人名用漢字863字の共有一覧
 
 旧字体・異体字を自動変換せず、IVS/SVS付き表現も基底文字へ自動フォールバックしません。判定対象は入力された文字そのものです。必要なら利用者が `Kanji.TryGetAlternative(...)` などで明示的に変換してから判定してください。
 
-## 学年別漢字配当表（教育漢字）
+### 学年別漢字配当表（教育漢字）
 
 `EducationKanji` は、平成29年告示の小学校学習指導要領に掲載された配当漢字1,026字を、学年別に参照します。`GetByGrade()` は転記データの順で、共有の読み取り専用一覧を返します。
 
@@ -243,7 +305,7 @@ var firstGrade = EducationKanji.GetByGrade(KanjiGrade.Grade1); // 80字
 
 配当表の文字そのものだけを判定します。旧字体、異体字、IVS/SVS付きの表現は対象外です。`EducationKanji` は `JoyoKanji` や異体字変換と自動的に結合しません。変換が必要な場合は、利用者側で `Kanji.TryGetAlternative(...)` などと明示的に組み合わせてください。
 
-### 教育漢字の文章診断
+#### 教育漢字の文章診断
 
 `EducationKanjiDiagnostics.AnalyzeText` は、指定した小学学年までに習う漢字で文章が構成されているかを診断します。字幕、ゲーム内テキスト、教材、ローカライズチェックなどから利用できます。
 
@@ -288,6 +350,7 @@ null入力は `ArgumentNullException`、未定義の対象学年は `ArgumentOut
 
 `KanjiVariants.Cli` は、既存の教育漢字・常用漢字診断APIを使って `.txt` ファイル全体、または `.srt` の字幕本文をチェックする.NET Toolです。実行には.NET 10ランタイムが必要です。NuGet.orgからインストールして利用できます。
 
+```powershell
 # インストール
 dotnet tool install --global KanjiVariants.Cli
 
@@ -302,6 +365,7 @@ dotnet tool update --global KanjiVariants.Cli
 
 # アンインストール
 dotnet tool uninstall --global KanjiVariants.Cli
+```
 
 NuGet.orgを使用せず、ローカルで生成したパッケージから専用ディレクトリへインストールすることもできます。
 
@@ -345,7 +409,7 @@ SRTの通常JSON項目には `subtitleNumber`、`startTime`、`endTime`、`textL
 
 入力拡張子は `.txt` と `.srt` のみ（大文字小文字を区別しません）で、どちらもUTF-8のみです。SRTの番号・時刻・本文の欠落や不正、重複番号、字幕間の区切り欠落は構文エラーとして終了コード2を返し、標準エラーへ元ファイルの行番号付きで表示します。非連番の番号、末尾空行の有無、空白だけの本文は受理します。空行だけの本文と空ファイルは構文エラーです。
 
-## 常用漢字の音訓と学校段階
+### 常用漢字の音訓と学校段階
 
 `JoyoKanjiEducation` は、文部科学省「音訓の小・中・高等学校段階別割り振り表（平成29年3月）」に基づき、常用漢字の音訓ごとの指導段階を `Elementary`・`JuniorHigh`・`HighSchool` で返します。各音訓の `Reading` は既存の `JoyoKanji` の `KanjiReading` と同じインスタンスです。同じ漢字でも読みごとに段階が異なり、漢字単位の小学校配当学年は `EducationKanji.GetGrade()` で別に調べます。この割り振りは指導の目安であり、学校での取扱いを制限するものではありません。
 
@@ -364,7 +428,7 @@ var ama = JoyoKanjiAppendix.FindByWord("海女")[0]; // Words: 海女、海士
 var kagura = JoyoKanjiAppendix.FindByReading("かぐら");
 ```
 
-## 送り仮名
+### 送り仮名
 
 `Okurigana` は、[文化庁「送り仮名の付け方」](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/okurikana/index.html)の通則1～7と付表に掲載された語を参照します。本則・例外・許容・付表を `OkuriganaRuleKind` で区別します。この機能は公式掲載語の参照に限定され、任意の日本語について送り仮名の正誤を自動判定するものではありません。未掲載語への規則適用、活用形の自動展開、形態素解析は行いません。
 
@@ -384,7 +448,7 @@ var appendix = Okurigana.GetByKind(OkuriganaRuleKind.Appendix);
 
 固定HTMLからの掲載項目数は483件です。同一語の別項目を含み、許容表記は同じ項目にまとめています。通則1～7は順に71・67・30・73・29・112・86件、付表は15件です。区分別では本則208・例外200・許容60・付表15件で、63項目に計72件の `AlternativeForms` があります。常用漢字・人名用漢字の判定や異体字変換とは独立した機能です。
 
-## MJ文字情報
+### MJ文字情報
 
 `MjCharacter` は、固定した `data/MJ/mji.00602.xlsx`（MJ文字情報一覧表 Ver.006.02）のMJ文字図形名・Unicode表現・漢字施策・X0213情報を参照します。文字図形名から一意に取得でき、Unicode表現からの検索では複数の関連MJ文字が返る場合があります。
 
@@ -404,7 +468,7 @@ foreach (var match in MjCharacter.Find("髙"))
 
 収録件数はMJ文字58,862件（文字図形名も58,862件）、対応UCS58,859件、実装UCS52,607件、IVS欄11,382件（シーケンス11,384件）、SVS欄89件（シーケンス89件）、漢字施策2,999件（常用2,136・人名用863）、互換漢字101件、X0213欄13,707件です。`MJ059399` と `MJ059400` はIVSを2件ずつ保持します。現行データに複数SVSの行はありませんが、SVSも複数値を扱う同じ処理を使用します。漢字施策を持つ全行の実装UCSは、既存の常用漢字・人名用漢字集合と一致することを検証しています。
 
-## 文字診断
+### 文字診断
 
 `KanjiDiagnostics.Analyze` で、一つの漢字表現のUnicode情報、JIS文字集合への所属、常用・教育・人名用漢字の情報、小学校・中学校・高等学校ごとの音訓配当、MJ文字情報をまとめて取得できます。既存APIの結果を集約し、旧字体やIVS/SVSを基底文字へ自動変換しません。
 
@@ -417,7 +481,7 @@ Console.WriteLine(result.IsJinmeiyoKanji);
 
 `UnicodeScalarCount` はスカラー数、`Utf16CodeUnitCount` はUTF-16コード単位数です。音訓配当とMJ一致情報は既存APIの読み取り専用一覧を共有します。文字列入力は `KanjiCharacter.Parse` と同じく、漢字一文字または登録済みIVS/SVSだけを受理します。nullは `ArgumentNullException`、空文字・複数文字・未登録VSなどは `FormatException` です。代替候補は含まないため、必要な場合は `Kanji.GetAlternatives` を別途使用してください。
 
-### 文字列全体の診断
+#### 文字列全体の診断
 
 `KanjiDiagnostics.AnalyzeText` は、文字列全体について指定した `CharacterSet` への適合性と、`KanjiText.Replace` が実際に採用する置換先を文字単位で確認できます。
 
@@ -438,11 +502,12 @@ foreach (var item in result.Items)
 }
 ```
 
-## API の使い分け
+### API の使い分け
 
 | API | 用途 | 文字列入力で許可する内容 |
 |---|---|---|
 | `Kanji.GetAlternatives` | MJ縮退マップにある候補を一覧取得。オプション指定時は登録済みIVS/SVSの基底文字も候補に追加 | 漢字一文字、または登録済み IVS/SVS |
+| `MjFallback.GetSources`（mainブランチで利用可能・公開済みNuGet 1.2.1には未収録） | 指定文字を縮退先とするMJ縮退元表現と、その関係の根拠を取得する | `KanjiCharacter.Parse` が認識する一文字（漢字やMJデータに登録された `〆` など）、または登録済みIVS/SVS（VS付き入力の結果は空） |
 | `Kanji.TryGetAlternative` | MJ縮退マップの一意な変換先を優先。使用できない場合、オプション指定時は登録済みIVS/SVSの基底文字を取得 | 漢字一文字、または登録済み IVS/SVS |
 | `Kanji.IsSupported` | 漢字表現そのものが指定された `CharacterSet` に含まれるか確認 | 漢字一文字、または登録済み IVS/SVS |
 | `KanjiText.Replace` | 変換可能な漢字を文字列内で置換。オプション指定時は登録済みIVS/SVSの基底文字へフォールバック | 任意の文字列 |
@@ -460,16 +525,20 @@ foreach (var item in result.Items)
 | `JoyoKanjiAppendix` | 常用漢字表の付表語や都道府県名の特別な読みを、語単位で検索 | 語または読み |
 | `Okurigana` | 文化庁「送り仮名の付け方」の公式掲載語・本則・例外・許容・付表を参照 | 公式掲載語または同じ項目の許容表記。未掲載語の正誤判定はしない |
 
+`KanjiCharacter.Parse` を使用するAPIの「漢字一文字または登録済みIVS/SVS」という入力説明には、同パーサーが認識するMJデータ上の文字（`〆`など）も含まれます。
+
+`MjFallback.GetSources` は縮退先から元表現を逆引きするAPIです。mainブランチで利用できますが、公開済みNuGet 1.2.1には含まれていません。`Kanji.GetAlternatives` の候補とは検索方向と用途が異なります。
+
 `GetAlternatives` は候補一覧、`TryGetAlternative` は一意変換表を優先した結果です。候補一覧が1件でも、それだけで一意な変換先とは判断しません。`KanjiCharacter.Parse` は形式が不正なら `FormatException`、`TryParse` は `false` を返します。
 
 常用漢字関連では、`JoyoKanji` が漢字と音訓そのもの、`EducationKanji` が小学校での漢字単位の配当学年、`JoyoKanjiEducation` が音訓単位の学校段階、`JoyoKanjiAppendix` が付表語・都道府県名の読みを担当します。`JinmeiyoKanji` は人名用漢字863字を参照し、常用漢字との和集合も判定します。
 
-## 一意な変換先の一覧
+### 一意な変換先の一覧
 
-MJ縮退マップの一意な変換表から作成した一覧を [`data/MJ/MJUniqueAlternatives.1.2.0.csv`](https://github.com/Koichi-Kobayashi/KanjiVariants/blob/main/data/MJ/MJUniqueAlternatives.1.2.0.csv) としてリポジトリで公開しています。
+MJ縮退マップの一意な変換表から作成した一覧を [`data/MJ/MJUniqueAlternatives.1.2.0.csv`](data/MJ/MJUniqueAlternatives.1.2.0.csv) としてリポジトリで公開しています。
 同じUnicode表現が複数行に現れる場合があります。MJ文字図形名で区別される字形ごとに変換先が異なることがあるためです。この一覧は特定の文字集合への収録可否で絞り込んでいません。変換先のUCSと、データに記録がある場合はJIS X 0213の面区点位置を掲載しています。
 
-## 文字列処理のルール
+### 文字列処理のルール
 
 - ASCIIは使用可能として通過します。ASCII以外の文字は、指定された `CharacterSet` への収録を確認します。
 - 通常のVariation Selectorを伴わないUnicodeコードポイントは、そのコードポイントの文字集合所属を確認します。
@@ -491,6 +560,19 @@ if (!KanjiText.IsSupported(result, CharacterSet.JisX0213))
 ```
 
 公開メソッドの引数、戻り値、例外の説明はXMLドキュメントコメントにも記載しています。`dotnet build` で `KanjiVariants.xml` が生成されます。
+
+### APIドキュメント
+
+公開ドキュメント: [https://koichi-kobayashi.github.io/KanjiVariants/](https://koichi-kobayashi.github.io/KanjiVariants/)
+
+DocfxのLocal Toolで、XMLコメントからAPIリファレンスと利用ガイドを生成できます。
+
+```powershell
+dotnet tool restore
+dotnet docfx docs/docfx.json
+```
+
+HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port 8080` でローカル閲覧できます。詳細は[生成・閲覧方法](https://koichi-kobayashi.github.io/KanjiVariants/articles/building-docs.html)、入口は[ドキュメントトップ](https://koichi-kobayashi.github.io/KanjiVariants/)を参照してください。
 
 ## ビルドと検証
 
@@ -517,26 +599,25 @@ MJ文字情報API用データは固定した `data/MJ/mji.00602.xlsx` から `py
 
 音訓別の学校段階と付表は、固定した `data/Joyo/JoyoKanjiSchoolStages2017.pdf` から `python tools/generate_joyo_education.py` で再生成できます。座標付きPDF文字抽出に `pdfplumber` が必要です。OCRは使用しません。`--check` で生成済みファイルとの一致を確認できます。原PDFのテキスト層で「𠮟」だけが欠落するため、Generatorは該当行の位置・音訓と既存 `JoyoKanji` を検証してから補正します。
 
-## APIドキュメント
+JIS X 0212データは固定した `data/JIS/jisx-212.ucm` と `data/Unicode/Unihan_OtherMappings.18.0.0.txt` から `python tools/generate_jis_x0212.py` で再生成し、`--check` で一致を確認できます。通常の生成・ビルドはネットワークへアクセスしません。取得だけを更新する場合は `python tools/fetch_jis_x0212.py` を明示的に実行します。固定原典のSHA-256、全件数、Unicode scalar・区点の妥当性と一意性、漢字部分の一致を検証します。
 
-公開ドキュメント: [https://koichi-kobayashi.github.io/KanjiVariants/](https://koichi-kobayashi.github.io/KanjiVariants/)
+## 配布前のビルド・パス検証
 
-DocfxのLocal Toolで、XMLコメントからAPIリファレンスと利用ガイドを生成できます。
+全構成に決定論的SourceRoot/PathMap/SourceLink正規化を適用し、PDBを削除せずソース位置を仮想化します。公開著作権者名・SourceLinkのHTTPS URLはローカルパスと区別します。正式パッケージのソースcommit・通知・版の確認は別途必要です。
 
 ```powershell
-dotnet tool restore
-dotnet docfx docs/docfx.json
+dotnet run --project tools/VerifyBuildArtifacts -c Release -- KanjiVariants/bin/Release/net6.0/KanjiVariants.dll KanjiVariants/bin/Release/net6.0/KanjiVariants.pdb
 ```
 
-HTMLの出力先は `docs/_site/` です。`dotnet docfx serve docs/_site --port 8080` でローカル閲覧できます。詳細は[生成・閲覧方法](https://koichi-kobayashi.github.io/KanjiVariants/articles/building-docs.html)、入口は[ドキュメントトップ](https://koichi-kobayashi.github.io/KanjiVariants/)を参照してください。
-
-JIS X 0212データは固定した `data/JIS/jisx-212.ucm` と `data/Unicode/Unihan_OtherMappings.18.0.0.txt` から `python tools/generate_jis_x0212.py` で再生成し、`--check` で一致を確認できます。通常の生成・ビルドはネットワークへアクセスしません。取得だけを更新する場合は `python tools/fetch_jis_x0212.py` を明示的に実行します。固定原典のSHA-256、全件数、Unicode scalar・区点の妥当性と一意性、漢字部分の一致を検証します。
+CIでも同じ検査器を使います。ローカルpackはGit管理外の出力先を指定し、公開済みパッケージを置換・公開しないでください。
 
 ## データと出典
 
 JIS X 0208は `data/JIS/JIS0208.TXT`（SHA-256 `1c571870457f19c97720631fa83ee491549a96ba1436da1296786a67d8632e87`）をオフラインで読みます。原典hash・全8,836区点・割当6,879・未割当1,957と1区32点の互換方針を検証し、Python codecの版に依存しません。[監査記録](docs/JIS-X0208-PROVENANCE-AUDIT.md)を参照してください。
 
-MJ一覧 Ver.006.02/縮退マップ Ver.1.2.0の原著作者はIPA、加工者はKoichi Kobayashi。検索/所属/漢字施策/文字情報/代替候補・一意変換の加工データ（生成C#の該当表・派生CSV・DLL内の同データ）はCC BY-SA 2.1 JPです。独自C#コードMITと分け、他の外部データは各条件を保持します。独立アプリケーションコード全体のライセンスを変更するものではありません。対象範囲と加工はLICENSE-NOTICES.mdに明記します。
+MJ一覧 Ver.006.02/縮退マップ Ver.1.2.0の原著作者はIPA、加工者はKoichi Kobayashi。検索/所属/漢字施策/文字情報/代替候補・一意変換/縮退関係の逆引き索引の加工データ（生成C#の該当表・派生CSV・DLL内の同データ）はCC BY-SA 2.1 JPです。独自C#コードMITと分け、他の外部データは各条件を保持します。独立アプリケーションコード全体のライセンスを変更するものではありません。対象範囲と加工は [LICENSE-NOTICES.md](LICENSE-NOTICES.md#mj加工データのライセンス範囲) に記載しています。
+
+逆引き索引（`GeneratedMjFallbackData.g.cs`）は、既存のMJ文字情報一覧表 Ver.006.02とMJ縮退マップ Ver.1.2.0から直接関係と根拠を再構成したものです。新しい外部データは追加せず、DLL内の同索引にもMJ加工データのCC BY-SA 2.1 JPの条件を維持します。登録済みシーケンスの照合に使う既存Unicodeデータには、同通知に記載されたUnicodeの条件が適用されます。
 
 生成元データを `data/` に固定し、実行時には生成済みデータを使います。JIS X 0213の所属情報は、MJ文字情報一覧表 Ver.006.02の「実装したUCS」と「X0213」に基づいています。
 
@@ -574,22 +655,12 @@ MJ一覧 Ver.006.02/縮退マップ Ver.1.2.0の原著作者はIPA、加工者�
 
 ### 日本語IVSの閲覧用一覧
 
-[`data/Unicode/Japanese_IVS_2026-08-03.xlsx`](https://github.com/Koichi-Kobayashi/KanjiVariants/blob/main/data/Unicode/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) からMoji_Joho、Adobe-Japan1、Hanyo-DenshiのCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
+[`data/Unicode/Japanese_IVS_2026-08-03.xlsx`](data/Unicode/Japanese_IVS_2026-08-03.xlsx) は、[Unicode IVD 2026-08-03](https://www.unicode.org/ivd/data/2026-08-03/IVD_Sequences.txt) からMoji_Joho、Adobe-Japan1、Hanyo-DenshiのCollectionを抽出した閲覧用Excelファイルです。`BaseCharacter` 列と `IVSCharacter` 列には、[IPAmj明朝](https://moji.or.jp/mojikiban/font/) を指定しています。この一覧は上記のランタイム用生成データとは別の参考資料であり、一覧への掲載だけでライブラリの対応範囲が広がるわけではありません。
 
 IPAmj明朝の配布元は、同フォントのIVS実装が2017-12-12版のMoji_Johoコレクションに準拠すると説明しています。そのため、Adobe-Japan1やHanyo-Denshiのシーケンス、または後のIVDで追加されたシーケンスでは、Excel上で指定された字形が表示されるとは限りません。見た目が同じでもVariation Selectorがないとは判断せず、符号位置を確認してください。
 
-MJデータの著作権者は独立行政法人情報処理推進機構（IPA）です。MJ文字情報一覧表とMJ縮退マップは [CC BY-SA 2.1 JP](https://creativecommons.org/licenses/by-sa/2.1/jp/) により提供されています。Unicodeのデータは [Unicode Terms of Use](https://www.unicode.org/terms_of_use.html) に従います。文化庁の公開情報は[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。出典と加工の詳細は [LICENSE-NOTICES.md](https://github.com/Koichi-Kobayashi/KanjiVariants/blob/main/LICENSE-NOTICES.md) に記載しています。
+MJデータの著作権者は独立行政法人情報処理推進機構（IPA）です。MJ文字情報一覧表とMJ縮退マップは [CC BY-SA 2.1 JP](https://creativecommons.org/licenses/by-sa/2.1/jp/) により提供されています。Unicodeのデータは [Unicode Terms of Use](https://www.unicode.org/terms_of_use.html) に従います。文化庁の公開情報は[文部科学省ウェブサイト利用規約](https://www.mext.go.jp/b_menu/1351168.htm)を参照してください。出典と加工の詳細は [LICENSE-NOTICES.md](LICENSE-NOTICES.md) に記載しています。
 
 ## 免責事項
 
-本ライブラリおよび同梱データは現状のまま提供されます。本ライブラリまたは同梱データの利用により発生したいかなる損害についても、作者は一切責任を負いません。ライセンス条件の異なる同梱データについては、[LICENSE-NOTICES.md](https://github.com/Koichi-Kobayashi/KanjiVariants/blob/main/LICENSE-NOTICES.md) もご確認ください。
-
-### 配布前のビルド・パス検証
-
-全構成に決定論的SourceRoot/PathMap/SourceLink正規化を適用し、PDBを削除せずソース位置を仮想化します。公開著作権者名・SourceLinkのHTTPS URLはローカルパスと区別します。正式パッケージのソースcommit・通知・版の確認は別途必要です。
-
-```text
-dotnet run --project tools/VerifyBuildArtifacts -c Release -- KanjiVariants/bin/Release/net6.0/KanjiVariants.dll KanjiVariants/bin/Release/net6.0/KanjiVariants.pdb
-```
-
-CIでも同じ検査器を使います。ローカルpackはGit管理外の出力先を指定し、公開済みパッケージを置換・公開しないでください。
+本ライブラリおよび同梱データは現状のまま提供されます。本ライブラリまたは同梱データの利用により発生したいかなる損害についても、作者は一切責任を負いません。ライセンス条件の異なる同梱データについては、[LICENSE-NOTICES.md](LICENSE-NOTICES.md) もご確認ください。
